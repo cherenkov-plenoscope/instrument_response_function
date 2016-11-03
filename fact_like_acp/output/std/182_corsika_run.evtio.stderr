@@ -1,0 +1,8 @@
+
+ Using IACT/ATMO package version 1.49 (2016-01-27) for CORSIKA 7.500
+
+I/O block extended by 122880 to 1122880 bytes
+I/O block extended by 139264 to 1262144 bytes
+I/O block extended by 155648 to 1417792 bytes
+I/O block extended by 172032 to 1589824 bytes
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG
