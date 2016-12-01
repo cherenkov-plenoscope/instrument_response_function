@@ -80,6 +80,7 @@ class TriggerList(object):
         primary_particle_energy = []
         scatter_radius = []
         lixel_sum = []
+	raw_lixel_sum = []
 
         for event in self.events:
             run_number.append(event['id']['run'])
@@ -88,11 +89,13 @@ class TriggerList(object):
             primary_particle_id.append(event['simulation_truth']['primary_particle']['id'])
             scatter_radius.append(event['simulation_truth']['scatter_radius'])
             lixel_sum.append(event['acp']['response']['lixel']['sum'])
+	    raw_lixel_sum.append(event['acp']['response']['raw_lixel']['sum'])
 
         self.run_number = np.array(run_number)
         self.event_number = np.array(event_number)
         self.primary_particle_id = np.array(primary_particle_id)
         self.primary_particle_energy = np.array(primary_particle_energy)
         self.scatter_radius = np.array(scatter_radius)
+        self.raw_lixel_sum = np.array(raw_lixel_sum)
         self.lixel_sum = np.array(lixel_sum)
         self.scatter_area = np.pi*self.scatter_radius**2.0
