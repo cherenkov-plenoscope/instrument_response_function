@@ -29,7 +29,7 @@ def get_effective_area_histogram(threshold, trigger_list, bins=15):
 	
 	bin_edges = np.logspace(E_min_log10, E_max_log10, bins+1)
 
-	above_threshold = trigger_list.lixel_sum > threshold
+	above_threshold = trigger_list.raw_lixel_sum > threshold
 	survived_energies = trigger_list.primary_particle_energy[above_threshold]	
 	thrown_energies = trigger_list.primary_particle_energy
 
@@ -80,7 +80,7 @@ class TriggerList(object):
         primary_particle_energy = []
         scatter_radius = []
         lixel_sum = []
-	raw_lixel_sum = []
+        raw_lixel_sum = []
 
         for event in self.events:
             run_number.append(event['id']['run'])
@@ -89,7 +89,7 @@ class TriggerList(object):
             primary_particle_id.append(event['simulation_truth']['primary_particle']['id'])
             scatter_radius.append(event['simulation_truth']['scatter_radius'])
             lixel_sum.append(event['acp']['response']['lixel']['sum'])
-	    raw_lixel_sum.append(event['acp']['response']['raw_lixel']['sum'])
+            raw_lixel_sum.append(event['acp']['response']['raw_lixel']['sum'])
 
         self.run_number = np.array(run_number)
         self.event_number = np.array(event_number)
