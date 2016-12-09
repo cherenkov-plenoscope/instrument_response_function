@@ -30,6 +30,8 @@ For each run
   - The high level plenopy output is stored permanently, everything else it 
     removed when the run is over.
 """
+import docopt
+import subprocess
 
 
 def main():
