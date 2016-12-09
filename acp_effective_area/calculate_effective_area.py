@@ -6,22 +6,6 @@ import shutil
 import glob
 import matplotlib.pyplot as plt
 
-class EffectiveArea(object):
-    def __init__(self, energies, scatter_areas, above_threshold_mask, energy_bin_edges):
-        self.energy_bin_edges = energy_bin_edges
-        self.scatter_areas = scatter_areas
-        self.energies = energies
-        self.number_thrown = np.histogram(energies, bins=energy_bin_edges)[0]
-        self.number_above_theshold = np.histogram(energies[above_threshold_mask], bins=energy_bin_edges)[0]
-
-    def plot(self):
-        scatter_area = self.scatter_areas[0]
-        plt.step(
-            self.energy_bin_edges[:-1], 
-            scatter_area*self.number_above_theshold/self.number_thrown)
-        plt.xlabel('energy/GeV')
-        plt.ylabel('area/m^2')
-        plt.show()
 
 def get_effective_area_histogram(threshold, trigger_list, bins=15):
 	E_min_log10 = np.floor(np.log10(trigger_list.primary_particle_energy.min()))
@@ -45,6 +29,7 @@ def get_effective_area_histogram(threshold, trigger_list, bins=15):
 	effective_area_histogram = survived_histogram/thrown_histogram
 	return [effective_area_histogram, bin_edges]	
 
+
 def plot_effective_area(effective_area_histogram, bin_edges):
 	plt.figure()
 	effective_area_histogram_steps = np.hstack(
@@ -54,6 +39,7 @@ def plot_effective_area(effective_area_histogram, bin_edges):
 	plt.xlabel('Energy/GeV')
 	plt.ylabel('Area/m^2')
 	plt.loglog()
+
 
 class TriggerList(object):
     def __init__(self, input_path):
