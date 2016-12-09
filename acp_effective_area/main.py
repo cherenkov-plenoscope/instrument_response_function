@@ -30,8 +30,9 @@ For each run
   - The high level plenopy output is stored permanently, everything else it 
     removed when the run is over.
 """
-if __name__ == '__main__':
 
+
+def main():
     try:
         arguments = docopt.docopt(__doc__)
     
@@ -54,3 +55,7 @@ if __name__ == '__main__':
 
     except docopt.DocoptExit as e:
         print(e)
+
+
+if __name__ == '__main__':
+    main()
