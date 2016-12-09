@@ -1,10 +1,10 @@
-<scenery author="Sebastian" comment="The 4m FACT telescope">
+<scenery author="Sebastian A. Mueller" comment="The 50m ACP">
     <function name="zero">
         <constant value="0.0" lower_limit="200e-9" upper_limit="1200e-9"/>
     </function>
 
     <function name="mirror_reflection">
-        <constant value="0.95" lower_limit="200e-9" upper_limit="1200e-9"/>
+        <constant value="0.75" lower_limit="200e-9" upper_limit="1200e-9"/>
     </function>
 
     <function name="lens_refraction">
@@ -26,13 +26,19 @@
     <color name="carbon_black" rgb="[75,75,75]"/>
 
     <frame>
-        <set_telescope/>
         <set_frame name="50m_ACP" pos="[0,0,0]" rot="[0.0, 0.0, 0.0]"/>
         
         <segmented_reflector>
             <set_frame name="reflector" pos="[0,0,0]" rot="[0,0,0]"/>
             <set_surface reflection_vs_wavelength="mirror_reflection"/>
-            <set_segmented_reflector focal_length="75.0" max_outer_aperture_radius="25.0" min_inner_aperture_radius="3.0" DaviesCotton_over_parabolic_mixing_factor="0.0" facet_inner_hex_radius="0.6" gap_between_facets="0.02"/>
+            <set_segmented_reflector 
+                focal_length="75.0" 
+                max_outer_aperture_radius="25.0"
+                min_inner_aperture_radius="3.0" 
+                DaviesCotton_over_parabolic_mixing_factor="0.0" 
+                facet_inner_hex_radius="0.6" 
+                gap_between_facets="0.02"
+            />
         </segmented_reflector>
 
         <light_field_sensor>
