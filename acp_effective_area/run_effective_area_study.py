@@ -79,7 +79,7 @@ def make_plenoscope_response(corsika_run_path, plenoscope_response_path, prng_se
 
 
 def trigger_study_run(steering):
-    with tempfile.TemporaryDirectory(prefix='acp_trigger_') as temp_path:
+    with tempfile.TemporaryDirectory(prefix='acp_effective_area_') as temp_path:
         corsika_run_path = os.path.join(temp_path, 'corsika_run.evtio')
         plenoscope_response_path = os.path.join(temp_path, 'response.pleno')
 
