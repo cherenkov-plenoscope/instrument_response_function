@@ -1,154 +1,166 @@
 """
-Run Trigger study
-
-Usage: run_trigger_study -i=STEERING_CARD_PATH -o=OUTPUT_PATH -c=CALIB_PATH -p=PROPCONFIG -n=NUMBER_RUNS -m=MCTPROPEXE
+Usage: acp_effective_area -i=STEERING_CARD_PATH -o=OUTPUT_PATH -c=CALIB_PATH -p=PROPCONFIG -n=NUMBER_RUNS -m=MCTPROPEXE
 
 Options:
     -i --input_path=STEERING_CARD_PATH          Path to corsika steering card
                                                 template.
-    -o --output_path=OUTPUT_PATH                Directory to collect trigger 
-                                                study results of rach run.
-    -n --number_runs=NUMBER_RUNS
-    -c --calib_plenoscope_path=CALIB_PATH 
-    -p --propagation_config_path=PROPCONFIG_PATH
-    -m --mctracer=MCTPROPEXE
+    -o --output_path=OUTPUT_PATH                Directory to collect simulation
+                                                results.
+    -n --number_of_runs=NUMBER_RUNS
+    -c --acp_calibration=CALIB_PATH 
+    -p --mctracer_acp_propagation_config=PROPCONFIG_PATH
+    -m --mctracer_acp_propagation=MCTPROPEXE
+
+Run the ACP effective area simulation.
+
+How it is done
+--------------
+First, the output directory is created (output_path).
+Second, all inputs are copied into the output directory.
+Third and finally, for each run (number_of_runs) the acp response is simulated:
+
+For each run
+------------
+  - CORSIKA simulates air showers and outputs Cherenkov photons for each shower.
+  - mctracer reads in the Cherenkov photons and simulates the corresponding 
+    ACP responses.
+  - plenopy reads in the ACP responses and outputs a high level analysis 
+    relevant trigger and air shower reconstruction with the ACP.
+  - The high level plenopy output is stored permanently, everything else it 
+    removed when the run is over.
 """
 import docopt
-import numpy as np
 import plenopy as pl
 import corsika_wrapper as cw
 
-from scoop import shared
-from scoop import futures
-import scoop as sc
-from subprocess import call
+import scoop
+import subprocess
 import tempfile
 import os
-import json
 import copy
 import shutil
 
-def mctPlenoscopePropagation_path():
-    return sc.shared.getConst('mctPlenoscopePropagation', timeout=5)
 
-
-def mct_propagation_config_path():
-    return sc.shared.getConst('mct_propagation_config', timeout=5)
-
-
-def plenoscope_calibration_path():
-    return sc.shared.getConst('plenoscope_calibration', timeout=5)
-
-
-def stdout_path():
-    return sc.shared.getConst('stdout_path', timeout=5)
-
-
-def copy_file_to_std_out_path(text_file_path, steering):
+def keep_stdout(text_path, cfg):
     shutil.copyfile(
-        text_file_path, 
+        text_path, 
         os.path.join(
-            stdout_path(), 
-            str(steering['run_number'])+'_'+os.path.basename(text_file_path)
-        )
-    )
+            cfg['output']['stdout'], 
+            str(cfg['run']['number'])+'_'+os.path.basename(text_path)))
 
 
-def analyse_plenoscope_response(plenoscope_response_path, output_path):
-    run = pl.Run(plenoscope_response_path)
-    trigger_info = []
+def analyse_plenoscope_response(acp_response_path, output_path):
+    run = pl.Run(acp_response_path)
+    event_info = []
     for event in run:
-        trigger_info.append(pl.trigger_study.export_trigger_information(event))
-    pl.trigger_study.write_dict_to_file(trigger_info, output_path)
+        event_info.append(pl.trigger_study.export_trigger_information(event))
+    pl.trigger_study.write_dict_to_file(event_info, output_path)
 
 
-def make_plenoscope_response(corsika_run_path, plenoscope_response_path, prng_seed):
-    stdout = open(plenoscope_response_path+'.stdout', 'w')
-    stderr = open(plenoscope_response_path+'.stderr', 'w')
-    call([
-        mctPlenoscopePropagation_path(),
-        '-l', plenoscope_calibration_path(),
-        '-c', mct_propagation_config_path(),
-        '-i', corsika_run_path,
-        '-o', plenoscope_response_path,
-        '-r', str(prng_seed)],
-        stdout=stdout,
-        stderr=stderr)
-    stderr.close()
-    stdout.close()            
+def acp_response(corsika_run_path, output_path, cfg):
+    with open(output_path+'.stdout', 'w') as out, open(output_path+'.stderr', 'w') as err:
+        subprocess.call([
+            cfg['mctracer_acp_propagation'],
+            '-l', cfg['input']['acp_calibration'],
+            '-c', cfg['input']['mctracer_acp_propagation_config'],
+            '-i', corsika_run_path,
+            '-o', output_path,
+            '-r', str(cfg['run']['mctracer_seed'])],
+            stdout=out,
+            stderr=err)        
 
 
-def trigger_study_run(steering):
-    with tempfile.TemporaryDirectory(prefix='acp_effective_area_') as temp_path:
-        corsika_run_path = os.path.join(temp_path, 'corsika_run.evtio')
-        plenoscope_response_path = os.path.join(temp_path, 'response.pleno')
+def simulate_acp_response(cfg):
+    with tempfile.TemporaryDirectory(prefix='acp_effective_area_') as tmp_dir:
+        corsika_run_path = os.path.join(tmp_dir, 'airshower.evtio')
+        acp_response_path = os.path.join(tmp_dir, 'acp_response.acp')
 
         cw.corsika(
-            steering_card=steering['steering_card'],
+            steering_card=cfg['run']['corsika_steering_card'],
             output_path=corsika_run_path, 
             save_stdout=True)
 
-        copy_file_to_std_out_path(corsika_run_path+'.stdout', steering)
-        copy_file_to_std_out_path(corsika_run_path+'.stderr', steering)
+        keep_stdout(corsika_run_path+'.stdout', cfg)
+        keep_stdout(corsika_run_path+'.stderr', cfg)
 
-        make_plenoscope_response(
+        acp_response(
             corsika_run_path=corsika_run_path,
-            plenoscope_response_path=plenoscope_response_path,
-            prng_seed=steering['mctracer_seed'])
+            output_path=acp_response_path,
+            cfg=cfg)
 
-        copy_file_to_std_out_path(plenoscope_response_path+'.stderr', steering)
-        copy_file_to_std_out_path(plenoscope_response_path+'.stdout', steering)
+        keep_stdout(acp_response_path+'.stderr', cfg)
+        keep_stdout(acp_response_path+'.stdout', cfg)
 
         analyse_plenoscope_response(
-            plenoscope_response_path=plenoscope_response_path,
-            output_path=steering['output_path'])
+            acp_response_path=acp_response_path,
+            output_path=os.path.join(
+                cfg['output']['directory'], 
+                str(run_number)+'json.gz'))
     return True
 
 
-if __name__ == '__main__':
-    def make_corsika_steering_cards(steering_card_template, output_path, number_of_runs=1):
-        steering = []
-        for run_index in range(number_of_runs):
-            run_number = run_index + 1
-            
-            card = copy.deepcopy(steering_card_template)
-            assert len(card['RUNNR']) == 1
-            card['RUNNR'][0] = str(run_number)
-            assert len(card['SEED']) == 2
-            card['SEED'][0] = str(run_number)+' 0 0'
-            card['SEED'][1] = str(run_number+1)+' 0 0'
+def make_instructions_for_all_runs(cfg):
 
-            steering.append({
-                'steering_card': card,
-                'output_path': os.path.join(output_path, str(int(run_number))+'.json'),
-                'run_number': run_number,
-                'mctracer_seed': run_number
-            })
-        return steering
+    steering_card_template = cw.read_steering_card(
+        cfg['input']['corsika_steering_template'])
+
+    instructions = []
+    for run_index in range(cfg['number_of_runs']):
+        run_number = run_index + 1
+        
+        # customize RUN number for specific run
+        card = copy.deepcopy(steering_card_template)
+        assert len(card['RUNNR']) == 1
+        card['RUNNR'][0] = str(run_number)
+
+        # customize seeds for specific run
+        assert len(card['SEED']) == 2
+        card['SEED'][0] = str(run_number)+' 0 0'
+        card['SEED'][1] = str(run_number+1)+' 0 0'
+
+        run_instructions = {
+            'number': run_number,
+            'corsika_steering_card': card,
+            'mctracer_seed': run_number,
+        }
+
+        cfg_for_run = copy.deepcopy(cfg)
+        cfg_for_run['run'] = run_instructions
+        instructions.append(cfg_for_run)
+    return instructions
+
+
+if __name__ == '__main__':
 
     try:
         arguments = docopt.docopt(__doc__)
-        sc.shared.setConst(mctPlenoscopePropagation=arguments['--mctracer'])
-        sc.shared.setConst(plenoscope_calibration=arguments['--calib_plenoscope_path'])
-        sc.shared.setConst(mct_propagation_config=arguments['--propagation_config_path'])
-        output_path=arguments['--output_path']
-        sc.shared.setConst(stdout_path=os.path.join(output_path, 'std'))
         
-        if not os.path.exists(output_path):
-            os.mkdir(output_path)
+        cfg = {}
+        cfg['number_of_runs'] = int(arguments['--number_of_runs'])
+        cfg['mctracer_acp_propagation'] = arguments['--mctracer_acp_propagation']
 
-        if not os.path.exists(stdout_path()):
-            os.mkdir(stdout_path())
+        # Set up output directories
+        cfg['output'] = {}
+        cfg['output']['directory'] = arguments['--output_cfg']
+        path['output']['stdout'] = os.path.join(cfg['output']['directory'], 'stdout')
 
-        steering_card_template = cw.read_steering_card(
-            arguments['--input_path'])
+        os.mkdir(cfg['output'])
+        os.mkdir(cfg['stdoutput'])
 
-        steering = make_corsika_steering_cards(
-            steering_card_template=steering_card_template,
-            output_path=output_path,
-            number_of_runs=int(arguments['--number_runs']))
+        # Copy all the input files
+        cfg['input'] = {}
+        cfg['input']['directory'] = os.path.join(cfg['output'], 'input')
+        cfg['input']['acp_calibration'] = os.path.join(cfg['input']['directory'], 'acp_calibration')
+        cfg['input']['mctracer_acp_propagation_config'] = os.path.join(cfg['input']['directory'], 'mctracer_acp_propagation_config.xml')
+        cfg['input']['corsika_steering_template'] = os.path.join(cfg['input']['directory'], 'corsika_steering_template.txt')
 
-        results = list(sc.futures.map(trigger_study_run, steering))
+        os.mkdir(cfg['input']['directory'])
+        shutil.copytree(arguments['--calib_plenoscope_path'], cfg['input']['acp_calibration'])
+        shutil.copy(arguments['--mctracer_acp_propagation_config'], cfg['input']['mctracer_acp_propagation_config'])
+        shutil.copy(arguments['--input_path'], cfg['input']['corsika_steering_template'])
+
+        instructions = make_instructions_for_all_runs(cfg)
+
+        results = list(scoop.futures.map(simulate_acp_response, instructions))
     except docopt.DocoptExit as e:
         print(e)
-
