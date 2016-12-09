@@ -32,6 +32,7 @@ For each run
 """
 import docopt
 import subprocess
+import pkg_resources
 
 
 def main():
