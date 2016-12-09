@@ -88,8 +88,8 @@ def simulate_acp_response(cfg):
             output_path=acp_response_path,
             cfg=cfg)
 
-        keep_stdout(acp_response_path+'.stderr', 'mctPlenoscopePropagation.stdout', cfg)
-        keep_stdout(acp_response_path+'.stdout', 'mctPlenoscopePropagation.stderr', cfg)
+        keep_stdout(acp_response_path+'.stdout', 'mctPlenoscopePropagation.stdout', cfg)
+        keep_stdout(acp_response_path+'.stderr', 'mctPlenoscopePropagation.stderr', cfg)
 
         analyse_plenoscope_response(
             acp_response_path=acp_response_path,
