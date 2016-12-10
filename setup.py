@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='acp_effective_area',
-    version='0.0.0',
+    version='0.0.1',
     description='Simulate the instrument response of an Atmospheric Cherenkov Plenoscope (ACP)',
     url='https://github.com/thebiglebowsky/effective_area.git',
     author='Sebastian Achim Mueller',
