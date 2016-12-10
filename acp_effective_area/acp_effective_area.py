@@ -39,6 +39,10 @@ import tempfile
 import os
 import copy
 import shutil
+from .read_intermediate_json import make_list_of_all_json_files
+from .read_intermediate_json import make_flat_run
+from .read_intermediate_json import concatenate_runs
+from .read_intermediate_json import save_result_to_json
 
 
 def keep_stdout(text_path, cfg):
@@ -159,8 +163,27 @@ if __name__ == '__main__':
         shutil.copy(arguments['--mctracer_acp_propagation_config'], cfg['input']['mctracer_acp_propagation_config'])
         shutil.copy(arguments['--input_path'], cfg['input']['corsika_steering_template'])
 
+        # STAGE 1
         instructions = make_instructions_for_all_runs(cfg)
-
         results = list(scoop.futures.map(simulate_acp_response, instructions))
+
+        # STAGE 2
+        instructions = make_list_of_all_json_files(cfg['output']['directory'])
+        flat_runs = list(scoop.futures.map(make_flat_run, instructions))
+        result = concatenate_runs(flat_runs)
+
+        # Append CORSIKA steering card template
+        result['input'] = {}
+        result['input']['corsika_steering_template'] = cw.read_steering_card(
+            cfg['input']['corsika_steering_template'])
+
+        # Append plenoscope scenery xml
+        xml = open(os.path.join(cfg['input']['acp_calibration'], 'input/scenery/scenery.xml'), 'r')
+        result['input']['scenery'] = xml.read()
+        xml.close()
+
+        result_path = os.path.join(cfg['output']['directory'], 'result.json.gz')
+        save_result_to_json(result=result, path=result_path)
+
     except docopt.DocoptExit as e:
         print(e)
