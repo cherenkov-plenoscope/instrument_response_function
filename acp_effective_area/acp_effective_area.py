@@ -98,8 +98,8 @@ def simulate_acp_response(cfg):
         analyse_plenoscope_response(
             acp_response_path=acp_response_path,
             output_path=os.path.join(
-                cfg['output']['directory'], 
-                str(cfg['run']['number'])+'.json.gz'))
+                cfg['output']['intermediate_results'], 
+                'result_run_'+str(cfg['run']['number'])+'.json.gz'))
     return True
 
 
@@ -146,10 +146,12 @@ if __name__ == '__main__':
         # Set up output directories
         cfg['output'] = {}
         cfg['output']['directory'] = arguments['--output_path']
+        cfg['output']['intermediate_results'] = os.path.join(cfg['output']['directory'], 'intermediate_results')
         cfg['output']['stdout'] = os.path.join(cfg['output']['directory'], 'stdout')
 
         os.mkdir(cfg['output']['directory'])
         os.mkdir(cfg['output']['stdout'])
+        os.mkdir(cfg['output']['intermediate_results'])
 
         # Copy all the input files
         cfg['input'] = {}
@@ -182,7 +184,7 @@ if __name__ == '__main__':
         result['input']['scenery'] = xml.read()
         xml.close()
 
-        result_path = os.path.join(cfg['output']['directory'], 'result.json.gz')
+        result_path = os.path.join(cfg['output']['intermediate_results'], 'result.json.gz')
         save_result_to_json(result=result, path=result_path)
 
     except docopt.DocoptExit as e:
