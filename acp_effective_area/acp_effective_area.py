@@ -45,12 +45,12 @@ from .read_intermediate_json import concatenate_runs
 from .read_intermediate_json import save_result_to_json
 
 
-def keep_stdout(text_path, cfg):
+def keep_stdout(text_path, out_name, cfg):
     shutil.copyfile(
         text_path, 
         os.path.join(
             cfg['output']['stdout'], 
-            str(cfg['run']['number'])+'_'+os.path.basename(text_path)))
+            str(cfg['run']['number'])+'_'+out_name))
 
 
 def analyse_plenoscope_response(acp_response_path, output_path):
@@ -84,22 +84,22 @@ def simulate_acp_response(cfg):
             output_path=corsika_run_path, 
             save_stdout=True)
 
-        keep_stdout(corsika_run_path+'.stdout', cfg)
-        keep_stdout(corsika_run_path+'.stderr', cfg)
+        keep_stdout(corsika_run_path+'.stdout', 'corsika.stdout', cfg)
+        keep_stdout(corsika_run_path+'.stderr', 'corsika.stderr', cfg)
 
         acp_response(
             corsika_run_path=corsika_run_path,
             output_path=acp_response_path,
             cfg=cfg)
 
-        keep_stdout(acp_response_path+'.stderr', cfg)
-        keep_stdout(acp_response_path+'.stdout', cfg)
+        keep_stdout(acp_response_path+'.stdout', 'mctPlenoscopePropagation.stdout', cfg)
+        keep_stdout(acp_response_path+'.stderr', 'mctPlenoscopePropagation.stderr', cfg)
 
         analyse_plenoscope_response(
             acp_response_path=acp_response_path,
             output_path=os.path.join(
                 cfg['output']['directory'], 
-                str(run_number)+'json.gz'))
+                str(cfg['run']['number'])+'.json.gz'))
     return True
 
 
@@ -145,21 +145,21 @@ if __name__ == '__main__':
 
         # Set up output directories
         cfg['output'] = {}
-        cfg['output']['directory'] = arguments['--output_cfg']
-        path['output']['stdout'] = os.path.join(cfg['output']['directory'], 'stdout')
+        cfg['output']['directory'] = arguments['--output_path']
+        cfg['output']['stdout'] = os.path.join(cfg['output']['directory'], 'stdout')
 
-        os.mkdir(cfg['output'])
-        os.mkdir(cfg['stdoutput'])
+        os.mkdir(cfg['output']['directory'])
+        os.mkdir(cfg['output']['stdout'])
 
         # Copy all the input files
         cfg['input'] = {}
-        cfg['input']['directory'] = os.path.join(cfg['output'], 'input')
+        cfg['input']['directory'] = os.path.join(cfg['output']['directory'], 'input')
         cfg['input']['acp_calibration'] = os.path.join(cfg['input']['directory'], 'acp_calibration')
         cfg['input']['mctracer_acp_propagation_config'] = os.path.join(cfg['input']['directory'], 'mctracer_acp_propagation_config.xml')
         cfg['input']['corsika_steering_template'] = os.path.join(cfg['input']['directory'], 'corsika_steering_template.txt')
 
         os.mkdir(cfg['input']['directory'])
-        shutil.copytree(arguments['--calib_plenoscope_path'], cfg['input']['acp_calibration'])
+        shutil.copytree(arguments['--acp_calibration'], cfg['input']['acp_calibration'])
         shutil.copy(arguments['--mctracer_acp_propagation_config'], cfg['input']['mctracer_acp_propagation_config'])
         shutil.copy(arguments['--input_path'], cfg['input']['corsika_steering_template'])
 
