@@ -4,14 +4,14 @@ from .working_dir import directory_structure
 from .json_in_out import read_json_dictionary
 
 
-def aeff(
-    path,
+def export_effective_area(
+    input_path,
     detector_responses_key,
     detector_response_threshold,
     output_path,
     bins=15):
     
-    path_cfg = directory_structure(path)
+    path_cfg = directory_structure(input_path)
     acp_event_responses = read_json_dictionary(
         path_cfg['main']['acp_event_responses'])
 
