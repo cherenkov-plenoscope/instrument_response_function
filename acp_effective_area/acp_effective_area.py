@@ -1,191 +1,82 @@
 """
-Usage: acp_effective_area -i=STEERING_CARD_PATH -o=OUTPUT_PATH -c=CALIB_PATH -p=PROPCONFIG -n=NUMBER_RUNS -m=MCTPROPEXE
+Usage: acp_effective_area -c=CORSIKA_CARD -o=OUTPUT -n=NUMBER_RUNS -a=ACP_DETECTOR -p=MCT_CONFIG -m=MCT_PROPAGATOR
 
 Options:
-    -i --input_path=STEERING_CARD_PATH          Path to corsika steering card
-                                                template.
-    -o --output_path=OUTPUT_PATH                Directory to collect simulation
-                                                results.
-    -n --number_of_runs=NUMBER_RUNS
-    -c --acp_calibration=CALIB_PATH 
-    -p --mctracer_acp_propagation_config=PROPCONFIG_PATH
-    -m --mctracer_acp_propagation=MCTPROPEXE
-
-Run the ACP effective area simulation.
-
-How it is done
---------------
-First, the output directory is created (output_path).
-Second, all inputs are copied into the output directory.
-Third and finally, for each run (number_of_runs) the acp response is simulated:
-
-For each run
-------------
-  - CORSIKA simulates air showers and outputs Cherenkov photons for each shower.
-  - mctracer reads in the Cherenkov photons and simulates the corresponding 
-    ACP responses.
-  - plenopy reads in the ACP responses and outputs a high level analysis 
-    relevant trigger and air shower reconstruction with the ACP.
-  - The high level plenopy output is stored permanently, everything else it 
-    removed when the run is over.
+    -h --help                               Prints this help message.
+    -c --corsika_card=CORSIKA_CARD          Path to the corsika steering card
+                                            template.
+    -o --output_path=OUTPUT                 Path to write the output directroy.                                    
+    -n --number_of_runs=NUMBER_RUNS         Number of simulation runs to be 
+                                            executed. The total number of events
+                                            is NUMBER_RUNS times NSHOW of the 
+                                            corsika steering template card.
+    -a --acp_detector=ACP_DETECTOR          Path to the Atmospheric Cherenkov
+                                            Plenoscope (lixel statistics).
+    -p --mct_acp_config=MCT_CONFIG          Path to the mctracer ACP propagation
+                                            configuration.
+    -m --mct_acp_propagator=PROPAGATOR      Path to the mctracer ACP propagation
+                                            executable.
 """
 import docopt
-import plenopy as pl
-import corsika_wrapper as cw
-
 import scoop
-import subprocess
-import tempfile
 import os
 import copy
 import shutil
-from .read_intermediate_json import make_list_of_all_json_files
-from .read_intermediate_json import make_flat_run
-from .read_intermediate_json import concatenate_runs
-from .read_intermediate_json import save_result_to_json
-
-
-def keep_stdout(text_path, out_name, cfg):
-    shutil.copyfile(
-        text_path, 
-        os.path.join(
-            cfg['output']['stdout'], 
-            str(cfg['run']['number'])+'_'+out_name))
-
-
-def analyse_plenoscope_response(acp_response_path, output_path):
-    run = pl.Run(acp_response_path)
-    event_info = []
-    for event in run:
-        event_info.append(pl.trigger_study.export_trigger_information(event))
-    pl.trigger_study.write_dict_to_file(event_info, output_path)
-
-
-def acp_response(corsika_run_path, output_path, cfg):
-    with open(output_path+'.stdout', 'w') as out, open(output_path+'.stderr', 'w') as err:
-        subprocess.call([
-            cfg['mctracer_acp_propagation'],
-            '-l', cfg['input']['acp_calibration'],
-            '-c', cfg['input']['mctracer_acp_propagation_config'],
-            '-i', corsika_run_path,
-            '-o', output_path,
-            '-r', str(cfg['run']['mctracer_seed'])],
-            stdout=out,
-            stderr=err)        
-
-
-def simulate_acp_response(cfg):
-    with tempfile.TemporaryDirectory(prefix='acp_effective_area_') as tmp_dir:
-        corsika_run_path = os.path.join(tmp_dir, 'airshower.evtio')
-        acp_response_path = os.path.join(tmp_dir, 'acp_response.acp')
-
-        cw.corsika(
-            steering_card=cfg['run']['corsika_steering_card'],
-            output_path=corsika_run_path, 
-            save_stdout=True)
-
-        keep_stdout(corsika_run_path+'.stdout', 'corsika.stdout', cfg)
-        keep_stdout(corsika_run_path+'.stderr', 'corsika.stderr', cfg)
-
-        acp_response(
-            corsika_run_path=corsika_run_path,
-            output_path=acp_response_path,
-            cfg=cfg)
-
-        keep_stdout(acp_response_path+'.stdout', 'mctPlenoscopePropagation.stdout', cfg)
-        keep_stdout(acp_response_path+'.stderr', 'mctPlenoscopePropagation.stderr', cfg)
-
-        analyse_plenoscope_response(
-            acp_response_path=acp_response_path,
-            output_path=os.path.join(
-                cfg['output']['intermediate_results'], 
-                'result_run_'+str(cfg['run']['number'])+'.json.gz'))
-    return True
-
-
-def make_instructions_for_all_runs(cfg):
-
-    steering_card_template = cw.read_steering_card(
-        cfg['input']['corsika_steering_template'])
-
-    instructions = []
-    for run_index in range(cfg['number_of_runs']):
-        run_number = run_index + 1
-        
-        # customize RUN number for specific run
-        card = copy.deepcopy(steering_card_template)
-        assert len(card['RUNNR']) == 1
-        card['RUNNR'][0] = str(run_number)
-
-        # customize seeds for specific run
-        assert len(card['SEED']) == 2
-        card['SEED'][0] = str(run_number)+' 0 0'
-        card['SEED'][1] = str(run_number+1)+' 0 0'
-
-        run_instructions = {
-            'number': run_number,
-            'corsika_steering_card': card,
-            'mctracer_seed': run_number,
-        }
-
-        cfg_for_run = copy.deepcopy(cfg)
-        cfg_for_run['run'] = run_instructions
-        instructions.append(cfg_for_run)
-    return instructions
+import acp_effective_area as ea
+import corsika_wrapper as cw
 
 
 if __name__ == '__main__':
-
     try:
         arguments = docopt.docopt(__doc__)
         
+        # Set up configuration and directory environment
         cfg = {}
+        cfg['path'] = ea.working_dir.directory_structure(
+            arguments['--output_path'])
+
+        os.mkdir(cfg['path']['main']['dir'])
+        os.mkdir(cfg['path']['main']['input']['dir'])
+        os.mkdir(cfg['path']['main']['stdout']['dir'])
+        os.mkdir(cfg['path']['main']['intermediate_results_of_runs']['dir'])
+
+        shutil.copy(
+            arguments['--corsika_card'], 
+            cfg['path']['main']['input']['corsika_steering_card_template'])
+        shutil.copytree(
+            arguments['--acp_detector'], 
+            cfg['path']['main']['input']['acp_detector'])
+        shutil.copy(
+            arguments['--mct_acp_config'], 
+            cfg['path']['main']['input']['mct_acp_config'])
+
         cfg['number_of_runs'] = int(arguments['--number_of_runs'])
-        cfg['mctracer_acp_propagation'] = arguments['--mctracer_acp_propagation']
+        cfg['mct_acp_propagator'] = arguments['--mct_acp_propagator']
 
-        # Set up output directories
-        cfg['output'] = {}
-        cfg['output']['directory'] = arguments['--output_path']
-        cfg['output']['intermediate_results'] = os.path.join(cfg['output']['directory'], 'intermediate_results')
-        cfg['output']['stdout'] = os.path.join(cfg['output']['directory'], 'stdout')
+        cfg['corsika_steering_card_template'] = cw.read_steering_card(
+            cfg['path']['main']['input']['corsika_steering_card_template'])
 
-        os.mkdir(cfg['output']['directory'])
-        os.mkdir(cfg['output']['stdout'])
-        os.mkdir(cfg['output']['intermediate_results'])
+        ea.header.make_summary_header(cfg)
 
-        # Copy all the input files
-        cfg['input'] = {}
-        cfg['input']['directory'] = os.path.join(cfg['output']['directory'], 'input')
-        cfg['input']['acp_calibration'] = os.path.join(cfg['input']['directory'], 'acp_calibration')
-        cfg['input']['mctracer_acp_propagation_config'] = os.path.join(cfg['input']['directory'], 'mctracer_acp_propagation_config.xml')
-        cfg['input']['corsika_steering_template'] = os.path.join(cfg['input']['directory'], 'corsika_steering_template.txt')
+        # STAGE 1, SIMULATION
+        simulation_instructions = ea.simulation.make_instructions(cfg)
+        return_codes = list(scoop.futures.map(
+            ea.simulation.simulate_acp_response, 
+            simulation_instructions))
 
-        os.mkdir(cfg['input']['directory'])
-        shutil.copytree(arguments['--acp_calibration'], cfg['input']['acp_calibration'])
-        shutil.copy(arguments['--mctracer_acp_propagation_config'], cfg['input']['mctracer_acp_propagation_config'])
-        shutil.copy(arguments['--input_path'], cfg['input']['corsika_steering_template'])
+        # STAGE 2, CONDENSATION
+        condensation_instructions = ea.intermediate.list_run_paths_in(
+            cfg['path']['main']['intermediate_results_of_runs']['dir'])
+        flat_runs = list(scoop.futures.map(
+            ea.intermediate.make_flat_run, 
+            condensation_instructions))
 
-        # STAGE 1
-        instructions = make_instructions_for_all_runs(cfg)
-        results = list(scoop.futures.map(simulate_acp_response, instructions))
+        acp_event_responses = ea.intermediate.concatenate_runs(flat_runs)
 
-        # STAGE 2
-        instructions = make_list_of_all_json_files(cfg['output']['directory'])
-        flat_runs = list(scoop.futures.map(make_flat_run, instructions))
-        result = concatenate_runs(flat_runs)
-
-        # Append CORSIKA steering card template
-        result['input'] = {}
-        result['input']['corsika_steering_template'] = cw.read_steering_card(
-            cfg['input']['corsika_steering_template'])
-
-        # Append plenoscope scenery xml
-        xml = open(os.path.join(cfg['input']['acp_calibration'], 'input/scenery/scenery.xml'), 'r')
-        result['input']['scenery'] = xml.read()
-        xml.close()
-
-        result_path = os.path.join(cfg['output']['intermediate_results'], 'result.json.gz')
-        save_result_to_json(result=result, path=result_path)
+        # Save results
+        ea.intermediate.write_json_dictionary(
+            result=acp_event_responses, 
+            path=cfg['path']['main']['acp_event_responses'])
 
     except docopt.DocoptExit as e:
         print(e)

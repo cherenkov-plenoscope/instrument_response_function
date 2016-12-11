@@ -1,18 +1,18 @@
 import numpy as np
 import os
-import gzip, json
 import glob
-import tqdm
+from .json_in_out import write_json_dictionary
+from .json_in_out import read_json_dictionary
 
 
-def make_list_of_all_json_files(path):
+def list_run_paths_in(path):
     """
     Returns a list of all '.json' or '.json.gz' files in path.
     """
     return glob.glob(os.path.join(path, '*.json*'))
 
 
-def make_flat_run(path):
+def make_flat_run(run_path):
     """
     Reads in a json run dictionary and returns a 'flat' run dictionary.
 
@@ -28,42 +28,34 @@ def make_flat_run(path):
             color: [2,8,9],
             height: [4.5, 4.3, 4.1],}
     """
-    json_dict = json2dict(run_path)
+    json_dict = read_json_dictionary(run_path)
     return flatten_run_dict(json_dict)   
 
 
-def read_all_results(path):
+def condese_intermediate_runs(intermediate_runs_dir, output_path):
     """
-    Reads in and returns the condensed intermediate instrument responses.
+    Reads in the intermediate run results and condeses the ACP event responses
+    in these run_XXX.josn.gz files into one singel dictionary which is stored 
+    into a JSON file.
     (single thread)
+
+    Parameter
+    ---------
+    intermediate_runs_dir       Path to the intermediate run results directory.
+    output_path                 Path to the output JSON of the ACP event 
+                                responses.
+
     """
-    run_paths = make_list_of_all_json_files(path)
+    run_paths = list_run_paths_in(intermediate_runs_dir)
     runs = []
-    for run_path in tqdm.tqdm(run_paths):
-        json_dict = json2dict(run_path)
+    for i, run_path in enumerate(run_paths):
+        json_dict = read_json_dictionary(run_path)
         flat_run = flatten_run_dict(json_dict)
         runs.append(flat_run)
+        print(str(i)+' of '+str(len(run_paths)))
 
     all_runs = concatenate_runs(runs)
-    return all_runs
-
-
-def save_result_to_json(result, path):
-    """
-    Saves a python dictionary into a json file.
-    """
-    out = {}
-
-    # un numpyify the arrays to lists
-    for key in result:
-        out[key] = result[key].tolist()
-
-    if os.path.splitext(path)[1] == '.gz':
-        with gzip.open(path, mode="wt") as outfile:
-            json.dump(out, outfile)
-    else:
-        with open(path, 'w') as outfile:
-            json.dump(out, outfile)
+    write_json_dictionary(all_runs, output_path)
 
 
 def concatenate_runs(runs):
@@ -84,20 +76,6 @@ def concatenate_runs(runs):
         concat_run[key] = np.concatenate(concat_run[key])
 
     return concat_run
-
-
-def json2dict(path):
-    """
-    Read in dictionaries from a json or gzipped json.gz file.
-    """
-    run = {}
-    if os.path.splitext(path)[1] == '.gz':
-        with gzip.open(path, "rb") as f:
-            run = json.loads(f.read().decode("ascii"))
-    else:
-        with open(path, 'r') as infile:
-            run = json.load(infile)
-    return run
 
 
 def flatten_run_dict(run_dict):
