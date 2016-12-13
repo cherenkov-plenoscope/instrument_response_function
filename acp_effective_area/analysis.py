@@ -51,20 +51,20 @@ def make_effective_area_histogram(
     survived_energies = primary_particle_energies[above_threshold]  
     thrown_energies = primary_particle_energies
 
-    survived_histogram = np.histogram(
+    area_survived_vs_energy = np.histogram(
         survived_energies, 
         bins=bin_edges,     
         weights=scatter_area[above_threshold])[0]
     
-    thrown_histogram = np.histogram(
+    number_thrown_vs_energy = np.histogram(
         thrown_energies, 
         bins=bin_edges)[0]
 
     return {
         'energy_bin_edges': bin_edges,
-        'thrown': thrown_histogram,
-        'survived': survived_histogram,
-        'survived_over_thrown': survived_histogram/thrown_histogram}
+        'number_thrown': number_thrown_vs_energy,
+        'area_survived': area_survived_vs_energy,
+        'effective_area': area_survived_vs_energy/number_thrown_vs_energy}
 
 
 def make_effective_area(
@@ -98,25 +98,25 @@ def make_effective_area_report(effective_area):
     out+='#     key: '+effective_area['detector_responses_key']+'\n'
     out+='#     threshold: '+float2str(effective_area['detector_response_threshold'])+'\n'
     out+='#\n'
-    out+='# Energy [TeV], Area[cm^2]\n'
+    out+='# log10(Primary Particle Energy) [log10(TeV)], Effective Area [cm^2]\n'
 
     GeV2TeV = 1e-3
     m2cm = 1e2 
 
     energies = effective_area['energy_bin_edges']
-    for i, area in enumerate(effective_area['survived_over_thrown']):
-        out+=float2str(energies[i]*GeV2TeV)+', '+float2str(area*m2cm*m2cm)+'\n'
+    for i, area in enumerate(effective_area['effective_area']):
+        out+=float2str(np.log10(energies[i]*GeV2TeV))+', '+float2str(area*m2cm*m2cm)+'\n'
     return out
 
 
 def save_effective_area_plot(effective_area, output_path):
-    effective_area_histogram = effective_area['survived_over_thrown']
+    effective_area_vs_energy = effective_area['effective_area']
     energy_bin_edges = effective_area['energy_bin_edges']
     plt.figure()
-    effective_area_histogram_steps = np.hstack(
-        (   effective_area_histogram[0], 
-            effective_area_histogram))
-    plt.step(energy_bin_edges, effective_area_histogram_steps) 
+    effective_area_vs_energy_steps = np.hstack(
+        (   effective_area_vs_energy[0], 
+            effective_area_vs_energy))
+    plt.step(energy_bin_edges, effective_area_vs_energy_steps) 
     plt.xlabel('Energy/GeV')
     plt.ylabel('Area/m^2')
     plt.loglog()
