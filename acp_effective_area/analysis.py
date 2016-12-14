@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import corsika_wrapper as cw
 from .working_dir import directory_structure
 from .json_in_out import read_json_dictionary
 
@@ -23,6 +24,12 @@ def export_effective_area(
         detector_responses_key=detector_responses_key,
         detector_response_threshold=detector_response_threshold,
         bins=bins)
+
+    corsika_steering_card = cw.read_steering_card(
+        path_cfg['main']['input']['corsika_steering_card_template'])
+
+    effective_area['scatter_solid_angle'] = scatter_solid_angle(
+        max_scatter_zenith_distance_in(corsika_steering_card))
 
     with open(path_cfg['main']['input']['header'], 'r') as f:
         header = f.read()
@@ -56,6 +63,10 @@ def make_effective_area_histogram(
         bins=bin_edges,     
         weights=scatter_area[above_threshold])[0]
     
+    number_detected_vs_energy = np.histogram(
+        survived_energies, 
+        bins=bin_edges)[0] 
+
     number_thrown_vs_energy = np.histogram(
         thrown_energies, 
         bins=bin_edges)[0]
@@ -63,6 +74,7 @@ def make_effective_area_histogram(
     return {
         'energy_bin_edges': bin_edges,
         'number_thrown': number_thrown_vs_energy,
+        'number_detected': number_detected_vs_energy,
         'area_survived': area_survived_vs_energy,
         'effective_area': area_survived_vs_energy/number_thrown_vs_energy}
 
@@ -92,20 +104,34 @@ def float2str(numeric_value):
 
 
 def make_effective_area_report(effective_area):
-    out =''
+
+    scatter_solid_angle = effective_area['scatter_solid_angle']
+    out ='#\n'
+    out+='# Scatter angle of primary particle:\n'
+    out+='#     solid angle: '+float2str(scatter_solid_angle)+'sr\n'
     out+='#\n'
     out+='# Detector response:\n'
     out+='#     key: '+effective_area['detector_responses_key']+'\n'
     out+='#     threshold: '+float2str(effective_area['detector_response_threshold'])+'\n'
     out+='#\n'
-    out+='# log10(Primary Particle Energy) [log10(TeV)], Effective Area [cm^2]\n'
-
+    if scatter_solid_angle > 0.0:
+        out+='# log10(Primary Particle Energy) [log10(TeV)], Effective Aperture [sr*cm^2], '
+    else:
+        out+='# log10(Primary Particle Energy) [log10(TeV)], Effective Area [cm^2], '
+    out+='number thrown [#], number detected [#]\n'
     GeV2TeV = 1e-3
-    m2cm = 1e2 
+    m2cm = 1e2
 
     energies = effective_area['energy_bin_edges']
     for i, area in enumerate(effective_area['effective_area']):
-        out+=float2str(np.log10(energies[i]*GeV2TeV))+', '+float2str(area*m2cm*m2cm)+'\n'
+        out+=float2str(np.log10(energies[i]*GeV2TeV))+', '
+        if scatter_solid_angle > 0.0:
+            out+=float2str(area*m2cm*m2cm*scatter_solid_angle)
+        else:
+            out+=float2str(area*m2cm*m2cm)
+        out+=', '   
+        out+=str(effective_area['number_thrown'][i])+', '
+        out+=str(effective_area['number_detected'][i])+'\n'
     return out
 
 
@@ -121,3 +147,16 @@ def save_effective_area_plot(effective_area, output_path):
     plt.ylabel('Area/m^2')
     plt.loglog()
     plt.savefig(output_path)
+
+
+def max_scatter_zenith_distance_in(corsika_steering_card):
+    thetap = corsika_steering_card['THETAP'][0]
+    thetap = thetap.strip()
+    max_zenith_distance_txt_deg = thetap.split()[1]
+    max_zenith_distance_deg = float(max_zenith_distance_txt_deg)
+    return np.deg2rad(max_zenith_distance_deg)
+
+
+def scatter_solid_angle(max_scatter_zenith_distance):
+    cap_hight = (1.0 - np.cos(max_scatter_zenith_distance));
+    return 2.0*np.pi*cap_hight;
