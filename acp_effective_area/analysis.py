@@ -1,3 +1,8 @@
+"""
+A bridge to the high level analysis [gamma_limits_sensitivity](
+https://github.com/mahnen/gamma_limits_sensitivity) to produce rate plots and 
+spectral exclusion zone plots. 
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 import corsika_wrapper as cw
@@ -11,6 +16,27 @@ def export_effective_area(
     detector_response_threshold,
     output_path,
     bins=15):
+    """
+    Outputs a text (CSV) file with the effective area [cm^2], or effective 
+    Aperture [sr*cm^2]. Crucial instrument and simulation settings are machine
+    written into the text file to keep track of the results. This output is
+    intended for the high level analysis bridge [gamma_limits_sensitivity](
+    https://github.com/mahnen/gamma_limits_sensitivity)
+
+    Parameter
+    ---------
+    input_path                      Path to the output directory of the 
+                                    effective area production.
+    detector_responses_key          The dictionary key to the detector response 
+                                    to be taken into account 
+                                    (e.g. raw_lixel_sum).
+    detector_response_threshold     A threshold upper limit value to the 
+                                    detector response in question.
+    output_path                     Path to the CSV text file with the high 
+                                    level effective Area.
+    bins                            The number of bins in the effective area 
+                                    energy binning. 
+    """
     
     path_cfg = directory_structure(input_path)
     acp_event_responses = read_json_dictionary(
