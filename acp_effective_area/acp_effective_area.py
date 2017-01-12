@@ -10,8 +10,8 @@ Options:
                                             executed. The total number of events
                                             is NUMBER_RUNS times NSHOW of the 
                                             corsika steering template card.
-    -a --acp_detector=ACP_DETECTOR          Path to the Atmospheric Cherenkov
-                                            Plenoscope (lixel statistics).
+    -a --acp_detector=ACP_DETECTOR          Path to the ACP's light field
+                                            calibration output folder.
     -p --mct_acp_config=MCT_CONFIG          Path to the mctracer ACP propagation
                                             configuration.
     -m --mct_acp_propagator=PROPAGATOR      Path to the mctracer ACP propagation
