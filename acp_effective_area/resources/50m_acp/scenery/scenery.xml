@@ -1,4 +1,4 @@
-<scenery author="Sebastian" comment="The 4m FACT telescope">
+<scenery author="Sebastian" comment="50m Plenoscope">
     <function name="zero">
         <constant value="0.0" lower_limit="200e-9" upper_limit="1200e-9"/>
     </function>
@@ -19,11 +19,6 @@
         <set_disc radius="100"/>
         <set_sensitive id="0"/>
     </disc>
-
-
-    <color name="body_white" rgb="[230,230,215]"/>
-    <color name="sensor_green" rgb="[0,255,128]"/>
-    <color name="carbon_black" rgb="[75,75,75]"/>
 
     <frame>
         <set_telescope/>
