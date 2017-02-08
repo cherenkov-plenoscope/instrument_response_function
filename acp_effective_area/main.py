@@ -1,5 +1,5 @@
 """
-Usage: acp_effective_area [-s=SCOOP_HOSTS] -c=CORSIKA_CARD -o=OUTPUT -n=NUMBER_RUNS -a=ACP_DETECTOR -p=MCT_CONFIG -m=MCT_PROPAGATOR
+Usage: acp_effective_area [-s=SCOOP_HOSTS] -c=CORSIKA_CARD -o=OUTPUT -n=NUMBER_RUNS -a=ACP_DETECTOR -p=MCT_ACP_CONFIG -m=MCT_ACP_PROPAGATOR
 
 Options:
     -h --help                                   Prints this help message.

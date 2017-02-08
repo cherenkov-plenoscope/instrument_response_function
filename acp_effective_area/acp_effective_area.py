@@ -1,5 +1,5 @@
 """
-Usage: acp_effective_area -c=CORSIKA_CARD -o=OUTPUT -n=NUMBER_RUNS -a=ACP_DETECTOR -p=MCT_CONFIG -m=MCT_PROPAGATOR
+Usage: acp_effective_area -c=CORSIKA_CARD -o=OUTPUT -n=NUMBER_RUNS -a=ACP_DETECTOR -p=MCT_ACP_CONFIG -m=MCT_ACP_PROPAGATOR
 
 Options:
     -h --help                               Prints this help message.
@@ -12,10 +12,10 @@ Options:
                                             corsika steering template card.
     -a --acp_detector=ACP_DETECTOR          Path to the Atmospheric Cherenkov
                                             Plenoscope (lixel statistics).
-    -p --mct_acp_config=MCT_CONFIG          Path to the mctracer ACP propagation
+    -p --mct_acp_config=MCT_ACP_CONFIG      Path to the mctracer ACP propagation
                                             configuration.
-    -m --mct_acp_propagator=PROPAGATOR      Path to the mctracer ACP propagation
-                                            executable.
+    -m --mct_acp_propagator=MCT_ACP_PROPAGATOR      Path to the mctracer ACP 
+                                                    propagation executable.
 """
 import docopt
 import scoop
