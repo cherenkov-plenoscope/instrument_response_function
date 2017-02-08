@@ -75,7 +75,7 @@
 
         <light_field_sensor>
             <!-- Object distance  g=5000m, so image distance is b=76.14m according to: 1/f = 1/g + 1/b -->
-            <set_frame name="light_field_sensor" pos="[0,0,76.14]" rot="[0,0,0]"/>
+            <set_frame name="light_field_sensor" pos="[0,0,75.0]" rot="[0,0,0]"/>
             <set_light_field_sensor
                 expected_imaging_system_focal_length="75.0"
                 expected_imaging_system_aperture_radius="25.0"
