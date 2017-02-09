@@ -8,6 +8,8 @@ THETAP  0.  6.5
 PHIP    0.  360.
 SEED 1 0 0 # seeds will be overwritten
 SEED 1 0 0
+SEED 1 0 0
+SEED 1 0 0
 OBSLEV  5000.0e2
 FIXCHI  0.
 MAGNET 1e-99 1e-99
