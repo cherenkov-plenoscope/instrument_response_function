@@ -1,6 +1,6 @@
 RUNNR    1
 EVTNR    1
-NSHOW    256
+NSHOW    128
 PRMPAR   14 # proton
 ESLOPE  -2.7
 ERANGE  2.5 1000
