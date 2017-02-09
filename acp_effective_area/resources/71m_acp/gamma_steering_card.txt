@@ -3,7 +3,7 @@ EVTNR    1
 NSHOW    512
 PRMPAR   1 # gamma
 ESLOPE  -2.6
-ERANGE  0.5 1000
+ERANGE  0.25 1000
 THETAP  0.  0.
 PHIP    0.  360.
 SEED 1 0 0 # seeds will be overwritten
@@ -16,7 +16,7 @@ MAGNET 1e-99 1e-99
 ELMFLG  T   T
 MAXPRT  1
 PAROUT  F F
-TELESCOPE  0. 0. 0. 27.5e2 # instrument radius
+TELESCOPE  0. 0. 0. 39.05e2 # instrument radius
 ATMOSPHERE 26 T # Chile, Paranal, ESO site 
 CWAVLG 290 700
 CSCAT 1 570e2 0.0

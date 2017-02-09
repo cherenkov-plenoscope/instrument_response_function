@@ -16,7 +16,7 @@ MAGNET 1e-99 1e-99
 ELMFLG  T   T
 MAXPRT  1
 PAROUT  F F
-TELESCOPE  0. 0. 0. 27.5e2 # sensor radius
+TELESCOPE  0. 0. 0. 27.5e2 # instrument radius
 ATMOSPHERE 26 T # Chile, Paranal, ESO site 
 CWAVLG 290 700
 CSCAT 1 570e2 0.0
