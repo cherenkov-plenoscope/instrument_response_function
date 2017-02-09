@@ -102,8 +102,8 @@ def make_corsika_steering_card_for_current_run(steering_card_template, run_numbe
     assert len(card['SEED']) == 4
     card['SEED'][0] = str(run_number  )+' 0 0' # 1 for the hadron shower
     card['SEED'][1] = str(run_number+1)+' 0 0' # 2 for the EGS4 part
-    card['SEED'][3] = str(run_number+2)+' 0 0' # 3 for the simulation of Cherenkov photons (only for CERENKOV option)
-    card['SEED'][4] = str(run_number+3)+' 0 0' # 4 for the random offset of Cherenkov telescope systems with respect of their nominal positions (only for IACT option)
+    card['SEED'][2] = str(run_number+2)+' 0 0' # 3 for the simulation of Cherenkov photons (only for CERENKOV option)
+    card['SEED'][3] = str(run_number+3)+' 0 0' # 4 for the random offset of Cherenkov telescope systems with respect of their nominal positions (only for IACT option)
                                                # 5 for the HERWIG routines in the NUPRIM option
                                                # 6 for the PARALLEL option
                                                # 7 for the CONEX option
