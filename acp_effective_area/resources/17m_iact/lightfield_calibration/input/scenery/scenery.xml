@@ -1,4 +1,4 @@
-<scenery author="Sebastian" comment="17m MAGIC like">
+<scenery author="Sebastian" comment="17m MAGIC like telescope for crosscheck">
     <function 
         name="mirror_reflectivity_vs_wavelength" 
         comment="
@@ -52,7 +52,7 @@
             <xy x="633e-9"  y="1.4570"/>
             <!--xy x="656e-9"  y="1.4564"/-->
             <xy x="694e-9"  y="1.4554"/>
-            <!--xy x="753e-9"  y="1.4542"/-->
+            <xy x="753e-9"  y="1.4542"/>
         </linear_interpolation>
     </function>
 
@@ -75,7 +75,7 @@
 
         <light_field_sensor>
             <!-- Object distance  g=5000m, so image distance is b=17.06m according to: 1/f = 1/g + 1/b -->
-            <set_frame name="light_field_sensor" pos="[0,0,17.06]" rot="[0,0,0]"/>
+            <set_frame name="light_field_sensor" pos="[0,0,17.0]" rot="[0,0,0]"/>
             <set_light_field_sensor
                 expected_imaging_system_focal_length="17.0"
                 expected_imaging_system_aperture_radius="8.5"
