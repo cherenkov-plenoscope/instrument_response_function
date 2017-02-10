@@ -5,7 +5,7 @@
             Almost no flux. 
             In Photons/(sr s m^2 m), last 'm' is for the wavelength wavelength[m] flux[1/(s m^2 sr m)">
             <linear_interpolation>
-                <xy x="220.0e-9"  y="1.0"/>  
+                <xy x="250.0e-9"  y="1.0"/>  
                 <xy x="700.0e-9" y="1.0"/>  
             </linear_interpolation>
         </function> 
@@ -21,8 +21,8 @@
             ICRC 2013, Takeshi Toyama
             wavelength[m] pde[1]">
             <linear_interpolation>
-                <xy x="200e-9"  y="0.0"/>
-                <xy x="220e-9"  y="0.0149"/>
+                <!--xy x="200e-9"  y="0.0"/-->
+                <!--xy x="220e-9"  y="0.0149"/-->
                 <xy x="240e-9"  y="0.0673"/>
                 <xy x="260e-9"  y="0.1812"/>
                 <xy x="280e-9"  y="0.2758"/>
@@ -41,8 +41,8 @@
                 <xy x="580e-9"  y="0.0837"/>
                 <xy x="620e-9"  y="0.0396"/>
                 <xy x="660e-9"  y="0.0107"/>
-                <xy x="700e-9"  y="0.0001"/>
-                <xy x="750e-9"  y="0.0"/>
+                <xy x="701e-9"  y="0.0001"/>
+                <!--xy x="750e-9"  y="0.0"/-->
             </linear_interpolation>
         </function>  
     </photo_electric_converter>
