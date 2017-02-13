@@ -66,7 +66,6 @@
         </segmented_reflector>
 
         <light_field_sensor>
-            <!-- Object distance  g=5000m, so image distance is b=17.06m according to: 1/f = 1/g + 1/b -->
             <set_frame name="light_field_sensor" pos="[0,0,17.0]" rot="[0,0,0]"/>
             <set_light_field_sensor
                 expected_imaging_system_focal_length="17.0"
