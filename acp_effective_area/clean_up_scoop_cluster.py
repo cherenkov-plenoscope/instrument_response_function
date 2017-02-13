@@ -17,14 +17,14 @@ def read_scoop_hosts(scoop_hosts_path):
 def kill_scoop_on_hosts(scoop_hosts):
     for hostname in scoop_hosts:
         with ScoopHost(hostname) as sch:
-            sch.execute(['pkill', '-f', 'scoop'])
+            sch.execute('pkill -f scoop')
 
 
 def remove_temporary_simulation_files_on_hosts(scoop_hosts):
     for hostname in scoop_hosts:
         with ScoopHost(hostname) as sch:
-            sch.execute(['rm', '-rf', '/tmp/acp_effective_area_*'])
-            sch.execute(['rm', '-rf', '/tmp/corsika_*']) 
+            sch.execute('rm -rf /tmp/acp_effective_area_*')
+            sch.execute('rm -rf /tmp/corsika_*') 
 
 
 class ScoopHost(object):
@@ -80,5 +80,5 @@ class ScoopHost(object):
     def __enter__(self):
         return self
 
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self._ssh.close()
