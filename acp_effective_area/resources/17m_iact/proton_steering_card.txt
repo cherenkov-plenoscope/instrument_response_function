@@ -17,7 +17,7 @@ ELMFLG  T   T
 MAXPRT  1
 PAROUT  F F
 TELESCOPE  0. 0. 0. 9.35e2 # instrument radius
-ATMOSPHERE 26 T # Chile, Paranal, ESO site 
+ATMOSPHERE 8 T # MAGIC, Winter 
 CWAVLG 250 700
 CSCAT 1 447e2 0.0
 CERQEF F T F # pde, atmo, mirror
