@@ -10,7 +10,7 @@ SEED 1 0 0 # seeds will be overwritten
 SEED 1 0 0
 SEED 1 0 0
 SEED 1 0 0
-OBSLEV  5000.0e2
+OBSLEV  2200.0e2 # Roque de los Muchachos, La Palma
 FIXCHI  0.
 MAGNET 1e-99 1e-99
 ELMFLG  T   T
