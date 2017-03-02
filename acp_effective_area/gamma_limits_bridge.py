@@ -15,7 +15,8 @@ def export_effective_area(
     detector_responses_key,
     detector_response_threshold,
     output_path,
-    bins=15):
+    bins=15,
+    overlay_magic_one=False):
     """
     Outputs a text (CSV) file with the effective area [cm^2], or effective 
     Aperture [sr*cm^2]. Crucial instrument and simulation settings are machine
@@ -66,7 +67,10 @@ def export_effective_area(
         o.write(header)
         o.write(effective_area_csv)
 
-    save_effective_area_plot(effective_area, output_path+'.png')
+    save_effective_area_plot(
+        effective_area, 
+        output_path+'.png',
+        overlay_magic_one=overlay_magic_one)
 
 
 def make_effective_area_histogram(
@@ -161,14 +165,21 @@ def make_effective_area_report(effective_area):
     return out
 
 
-def save_effective_area_plot(effective_area, output_path, overlay_magic_one=False):
+def save_effective_area_plot(
+    effective_area, output_path, 
+    label='ACP', 
+    overlay_magic_one=False):
+
     effective_area_vs_energy = effective_area['effective_area']
     energy_bin_edges = effective_area['energy_bin_edges']
     plt.figure()
     effective_area_vs_energy_steps = np.hstack(
         (   effective_area_vs_energy[0], 
             effective_area_vs_energy))
-    plt.step(energy_bin_edges, effective_area_vs_energy_steps) 
+    plt.step(
+        energy_bin_edges, 
+        effective_area_vs_energy_steps, 
+        label='') 
     plt.xlabel('Energy/GeV')
     plt.ylabel('Area/m^2')
     plt.loglog()
@@ -178,8 +189,10 @@ def save_effective_area_plot(effective_area, output_path, overlay_magic_one=Fals
         plt.plot(
             magic_one[:,0], 
             magic_one[:,1], 
-            'xg'
+            'xg',
             label='MAGIC I')
+        plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+           ncol=2, mode="expand", borderaxespad=0.)
 
     plt.savefig(output_path)
 
