@@ -14,6 +14,7 @@ setup(
     package_data={'acp_effective_area': ['resources/*']},
     install_requires=[
         'docopt',
+        'paramiko',
     ],
     entry_points={'console_scripts': [
         'acp_effective_area = acp_effective_area.main:main',
