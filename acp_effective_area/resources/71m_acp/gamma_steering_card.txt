@@ -1,6 +1,6 @@
 RUNNR    1
 EVTNR    1
-NSHOW    128
+NSHOW    256
 PRMPAR   1 # gamma
 ESLOPE  -2.6
 ERANGE  0.25 1000
