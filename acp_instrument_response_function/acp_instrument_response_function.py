@@ -1,5 +1,5 @@
 """
-Usage: acp_effective_area -c=CORSIKA_CARD -o=OUTPUT -n=NUMBER_RUNS -a=ACP_DETECTOR -p=MCT_ACP_CONFIG -m=MCT_ACP_PROPAGATOR
+Usage: acp_instrument_response_function -c=CORSIKA_CARD -o=OUTPUT -n=NUMBER_RUNS -a=ACP_DETECTOR -p=MCT_ACP_CONFIG -m=MCT_ACP_PROPAGATOR
 
 Options:
     -h --help                               Prints this help message.
@@ -22,7 +22,7 @@ import scoop
 import os
 import copy
 import shutil
-import acp_effective_area as ea
+import acp_instrument_response_function as irf
 import corsika_wrapper as cw
 
 
@@ -32,7 +32,7 @@ if __name__ == '__main__':
         
         # Set up configuration and directory environment
         cfg = {}
-        cfg['path'] = ea.working_dir.directory_structure(
+        cfg['path'] = irf.working_dir.directory_structure(
             arguments['--output_path'])
 
         os.mkdir(cfg['path']['main']['dir'])
@@ -56,25 +56,25 @@ if __name__ == '__main__':
         cfg['corsika_steering_card_template'] = cw.read_steering_card(
             cfg['path']['main']['input']['corsika_steering_card_template'])
 
-        ea.header.make_summary_header(cfg)
+        irf.header.make_summary_header(cfg)
 
         # STAGE 1, SIMULATION
-        simulation_instructions = ea.simulation.make_instructions(cfg)
+        simulation_instructions = irf.simulation.make_instructions(cfg)
         return_codes = list(scoop.futures.map(
-            ea.simulation.simulate_acp_response, 
+            irf.simulation.simulate_acp_response, 
             simulation_instructions))
 
         # STAGE 2, CONDENSATION
-        condensation_instructions = ea.intermediate.list_run_paths_in(
+        condensation_instructions = irf.intermediate.list_run_paths_in(
             cfg['path']['main']['intermediate_results_of_runs']['dir'])
         flat_runs = list(scoop.futures.map(
-            ea.intermediate.make_flat_run, 
+            irf.intermediate.make_flat_run, 
             condensation_instructions))
 
-        acp_event_responses = ea.intermediate.concatenate_runs(flat_runs)
+        acp_event_responses = irf.intermediate.concatenate_runs(flat_runs)
 
         # Save results
-        ea.intermediate.write_json_dictionary(
+        irf.intermediate.write_json_dictionary(
             result=acp_event_responses, 
             path=cfg['path']['main']['acp_event_responses'])
 
