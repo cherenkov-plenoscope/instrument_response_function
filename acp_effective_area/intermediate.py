@@ -102,7 +102,6 @@ def flatten_run_dict(run_dict):
     run_number = []
     event_number = []
 
-    lixel_sum = []
     raw_lixel_sum = []
 
     primary_particle_id = []
@@ -117,7 +116,6 @@ def flatten_run_dict(run_dict):
         run_number.append(event['id']['run'])
         event_number.append(event['id']['event'])
 
-        lixel_sum.append(event['acp']['response']['lixel']['sum'])
         raw_lixel_sum.append(event['acp']['response']['raw_lixel']['sum'])
 
         primary_particle_id.append(event['simulation_truth']['primary_particle']['id'])
@@ -135,7 +133,6 @@ def flatten_run_dict(run_dict):
         'event_number': np.array(event_number, dtype=np.int32),
 
         'raw_lixel_sum': np.array(raw_lixel_sum, dtype=np.float32),
-        'lixel_sum': np.array(lixel_sum, dtype=np.float32),
 
         'primary_particle_id': np.array(primary_particle_id, dtype=np.int32),
         'primary_particle_energy': np.array(primary_particle_energy, dtype=np.float32),

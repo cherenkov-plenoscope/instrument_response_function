@@ -2,7 +2,7 @@
     <!--  -->
     <night_sky_background_ligth exposure_time="50e-9">
         <function name="nsb_flux_vs_wavelength" comment="
-            Almost no flux. 
+            Almost no flux. The night sky brightness is deactivated here.
             In Photons/(sr s m^2 m), last 'm' is for the wavelength wavelength[m] flux[1/(s m^2 sr m)">
             <linear_interpolation>
                 <xy x="250.0e-9"  y="1.0"/>  
@@ -46,8 +46,8 @@
             </linear_interpolation>
         </function>  
     </photo_electric_converter>
-    <pulse_extractor
-        integration_time_window="25e-9"
+    <photon_stream
+        slice_duration="0.5e-9"
     />
     <settings
         max_number_of_interactions_per_photon="10"
