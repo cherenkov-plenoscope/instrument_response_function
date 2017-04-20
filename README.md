@@ -1,5 +1,5 @@
-Instrument Response Functions (IRF)
------------------------------------
+Instrument Response Function (IRF)
+----------------------------------
 for the Atmospheric Cherenkov Plenoscope (ACP)
 
 - Air shower simulations [CORSIKA](https://github.com/TheBigLebowSky/custom_corsika)
