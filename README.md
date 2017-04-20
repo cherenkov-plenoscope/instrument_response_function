@@ -1,5 +1,5 @@
-Effective Area Simulation
--------------------------
+Instrument Response Functions (IRF)
+-----------------------------------
 for the Atmospheric Cherenkov Plenoscope (ACP)
 
 - Air shower simulations [CORSIKA](https://github.com/TheBigLebowSky/custom_corsika)
@@ -10,7 +10,7 @@ Runs with python [scoop](https://github.com/soravux/scoop) for massive parallel 
 
 ## Install
 ```bash
-pip install git+https://github.com/TheBigLebowSky/effective_area
+pip install git+https://github.com/TheBigLebowSky/instrument_response_function
 ```
 
 ## How to run a simulation
