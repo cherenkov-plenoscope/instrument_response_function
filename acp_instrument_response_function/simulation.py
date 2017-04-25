@@ -58,7 +58,7 @@ def simulate_acp_response(cfg):
     Only the high level results of plenopy are stored. The 'airshower.evtio' 
     files and the ACP response files 'acp_response.acp' will be removed.
     """
-    with tempfile.TemporaryDirectory(prefix='acp_effective_area_') as tmp_dir:
+    with tempfile.TemporaryDirectory(prefix='acp_irf_') as tmp_dir:
         corsika_run_path = os.path.join(tmp_dir, 'airshower.evtio')
         acp_response_path = os.path.join(tmp_dir, 'acp_response.acp')
 

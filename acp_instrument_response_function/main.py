@@ -1,5 +1,5 @@
 """
-Usage: acp_effective_area [-s=SCOOP_HOSTS] -c=CORSIKA_CARD -o=OUTPUT -n=NUMBER_RUNS -a=ACP_DETECTOR -p=MCT_ACP_CONFIG -m=MCT_ACP_PROPAGATOR
+Usage: acp_instrument_response_function [-s=SCOOP_HOSTS] -c=CORSIKA_CARD -o=OUTPUT -n=NUMBER_RUNS -a=ACP_DETECTOR -p=MCT_ACP_CONFIG -m=MCT_ACP_PROPAGATOR
 
 Options:
     -h --help                                   Prints this help message.
@@ -27,14 +27,14 @@ def main():
     try:
         arguments = docopt.docopt(__doc__)
     
-        acp_effective_area_main = pkg_resources.resource_filename(
-                'acp_effective_area', 
-                'acp_effective_area.py')
+        acp_irf_main = pkg_resources.resource_filename(
+                'acp_instrument_response_function', 
+                'acp_instrument_response_function.py')
 
         command = [
             'python',
             '-m', 'scoop',
-            acp_effective_area_main,
+            acp_irf_main,
             '--corsika_card', arguments['--corsika_card'],
             '--output_path', arguments['--output_path'],
             '--number_of_runs', arguments['--number_of_runs'],

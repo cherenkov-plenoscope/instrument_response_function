@@ -15,14 +15,14 @@ pip install git+https://github.com/TheBigLebowSky/instrument_response_function
 
 ## How to run a simulation
 ```bash
-user@machine:~$ acp_effective_area [-s=SCOOP_HOSTS] -c=CORSIKA_CARD -o=OUTPUT -n=NUMBER_RUNS -a=ACP_DETECTOR -p=MCT_CONFIG -m=MCT_PROPAGATOR
+user@machine:~$ acp_instrument_response_function [-s=SCOOP_HOSTS] -c=CORSIKA_CARD -o=OUTPUT -n=NUMBER_RUNS -a=ACP_DETECTOR -p=MCT_CONFIG -m=MCT_PROPAGATOR
 ```
 
 ## How to explore the results
 ```python
-In [1]: import acp_effective_area as acp_aeff
+In [1]: import acp_instrument_response_function as acp_irf
 
-In [2]: acp_aeff.analysis.export_effective_area(
+In [2]: acp_irf.analysis.export_effective_area(
 	input_path='/home/sebastian/Desktop/electron_2016Dec10_01h19m/', 
 	detector_responses_key='raw_lixel_sum', 
 	detector_response_threshold=100, 
