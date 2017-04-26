@@ -3,6 +3,14 @@ import os
 
 
 def read_scoop_hosts(scoop_hosts_path):
+    """
+    Reads in the scoop hosts text file and returns a list of these hosts. The 
+    additional maximal number of threads of each host is ignored.
+
+    Parameters
+    ----------
+    scoop_hosts_path        Path of the scoop hosts file
+    """
     with open(scoop_hosts_path, 'r') as f:
         hosts = f.read()
     hosts = hosts.splitlines()
@@ -15,19 +23,42 @@ def read_scoop_hosts(scoop_hosts_path):
 
 
 def kill_scoop_on_hosts(scoop_hosts):
+    """
+    Kills all scoop instances running on the hosts. Calls: 'pkill -f scoop'
+
+    Parameters
+    ----------
+    scoop_hosts         A list of host adresses.
+    """
     for hostname in scoop_hosts:
         with ScoopHost(hostname) as sch:
             sch.execute('pkill -f scoop')
 
 
-def remove_temporary_simulation_files_on_hosts(
-    scoop_hosts, 
-    remove_corsika=False):
+def remove_tmp_irf_dir_on_hosts(scoop_hosts):
+    """
+    Performs: 'rm -rf /tmp/acp_irf_*' on the hosts in the scoop_hosts list.
+
+    Parameters
+    ----------
+    scoop_hosts         A list of host adresses.
+    """
     for hostname in scoop_hosts:
         with ScoopHost(hostname) as sch:
             sch.execute('rm -rf /tmp/acp_irf_*')
-            if remove_corsika:
-                sch.execute('rm -rf /tmp/corsika_*') 
+
+
+def remove_tmp_corsika_dir_on_hosts(scoop_hosts):
+    """
+    Performs: 'rm -rf /tmp/corsika_*' on the hosts in the scoop_hosts list.
+
+    Parameters
+    ----------
+    scoop_hosts         A list of host adresses.
+    """
+    for hostname in scoop_hosts:
+        with ScoopHost(hostname) as sch:
+            sch.execute('rm -rf /tmp/corsika_*')
 
 
 class ScoopHost(object):
