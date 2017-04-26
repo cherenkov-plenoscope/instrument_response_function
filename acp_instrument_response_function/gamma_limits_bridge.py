@@ -154,14 +154,15 @@ def make_effective_area_report(effective_area):
 
     energies = effective_area['energy_bin_edges']
     for i, area in enumerate(effective_area['effective_area']):
-        out+=float2str(np.log10(energies[i]*GeV2TeV))+', '
-        if scatter_solid_angle > 0.0:
-            out+=float2str(area*m2cm*m2cm*scatter_solid_angle)
-        else:
-            out+=float2str(area*m2cm*m2cm)
-        out+=', '   
-        out+=str(effective_area['number_thrown'][i])+', '
-        out+=str(effective_area['number_detected'][i])+'\n'
+        if effective_area['number_thrown'][i] > 0:
+            out+=float2str(np.log10(energies[i]*GeV2TeV))+', '
+            if scatter_solid_angle > 0.0:
+                out+=float2str(area*m2cm*m2cm*scatter_solid_angle)
+            else:
+                out+=float2str(area*m2cm*m2cm)
+            out+=', '   
+            out+=str(effective_area['number_thrown'][i])+', '
+            out+=str(effective_area['number_detected'][i])+'\n'
     return out
 
 
