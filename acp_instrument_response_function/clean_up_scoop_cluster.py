@@ -20,11 +20,14 @@ def kill_scoop_on_hosts(scoop_hosts):
             sch.execute('pkill -f scoop')
 
 
-def remove_temporary_simulation_files_on_hosts(scoop_hosts):
+def remove_temporary_simulation_files_on_hosts(
+    scoop_hosts, 
+    remove_corsika=False):
     for hostname in scoop_hosts:
         with ScoopHost(hostname) as sch:
-            sch.execute('rm -rf /tmp/acp_effective_area_*')
-            sch.execute('rm -rf /tmp/corsika_*') 
+            sch.execute('rm -rf /tmp/acp_irf_*')
+            if remove_corsika:
+                sch.execute('rm -rf /tmp/corsika_*') 
 
 
 class ScoopHost(object):
