@@ -19,7 +19,7 @@ def export_effective_area(
     overlay_magic_one=False):
     """
     Outputs a text (CSV) file with the effective area [cm^2], or effective 
-    Aperture [sr*cm^2]. Crucial instrument and simulation settings are machine
+    acceptance [sr*cm^2]. Crucial instrument and simulation settings are machine
     written into the text file to keep track of the results. This output is
     intended for the high level analysis bridge [gamma_limits_sensitivity](
     https://github.com/mahnen/gamma_limits_sensitivity)
@@ -145,7 +145,7 @@ def make_effective_area_report(effective_area):
     out+='#     threshold: '+float2str(effective_area['detector_response_threshold'])+'\n'
     out+='#\n'
     if scatter_solid_angle > 0.0:
-        out+='# log10(Primary Particle Energy) [log10(TeV)], Effective Aperture [sr*cm^2], '
+        out+='# log10(Primary Particle Energy) [log10(TeV)], Effective Acceptance [sr*cm^2], '
     else:
         out+='# log10(Primary Particle Energy) [log10(TeV)], Effective Area [cm^2], '
     out+='number thrown [#], number detected [#]\n'
