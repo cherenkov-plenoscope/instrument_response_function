@@ -227,6 +227,7 @@ def magic_one_collection_area():
     www.sciencemag.org/cgi/content/full/1164718/DC1
     Figure 3, sum-trigger, red
     200 percent paper scale
+    DOI: 10.1126/science.1164718 
     """
     raw_from_figure = np.array([
     # energy [mm]  area [mm]
