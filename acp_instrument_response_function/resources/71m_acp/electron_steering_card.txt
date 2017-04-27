@@ -2,7 +2,7 @@ RUNNR    1
 EVTNR    1
 NSHOW    256
 PRMPAR   3 # electron
-ESLOPE  -3.2
+ESLOPE  -2.0
 ERANGE  0.5 1000
 THETAP  0.  6.5
 PHIP    0.  360.
