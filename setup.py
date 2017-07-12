@@ -7,7 +7,7 @@ setup(
     url='https://github.com/TheBigLebowSky/instrument_response_function.git',
     author='Sebastian Achim Mueller',
     author_email='sebmuell@phys.ethz.ch',
-    license='MIT',
+    license='GPL v3',
     packages=[
         'acp_instrument_response_function',
     ],
