@@ -1,6 +1,6 @@
 Instrument Response Function (IRF)
-----------------------------------
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+----------------------------------[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
 for the Atmospheric Cherenkov Plenoscope (ACP)
 
 - Air shower simulations [CORSIKA](https://github.com/TheBigLebowSky/custom_corsika)
