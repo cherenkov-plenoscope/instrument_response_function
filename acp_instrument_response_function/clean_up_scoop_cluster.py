@@ -22,43 +22,43 @@ def read_scoop_hosts(scoop_hosts_path):
     return only_host_adresses
 
 
-def kill_scoop_on_hosts(scoop_hosts):
+def kill_all_processes_on_hosts(process_wild_card, scoop_hosts):
     """
-    Kills all scoop instances running on the hosts. Calls: 'pkill -f scoop'
+    Kills all processes matching the process_wild_card.
+    Calls: 'pkill -f <process_wild_card>' on each scoop_host.
 
     Parameters
     ----------
+    process_wild_card   A process-name to be killed on the scoop-hosts.
+
     scoop_hosts         A list of host adresses.
     """
     for hostname in scoop_hosts:
         with ScoopHost(hostname) as sch:
-            sch.execute('pkill -f scoop')
+            sch.execute('pkill -f '+process_wild_card)
 
 
-def remove_tmp_irf_dir_on_hosts(scoop_hosts):
+def remove_file_on_hosts(file_wild_card, scoop_hosts):
     """
-    Performs: 'rm -rf /tmp/acp_irf_*' on the hosts in the scoop_hosts list.
+    Performs: 'rm -rf <file_wild_card>' on the scoop-hosts.
 
     Parameters
     ----------
+    file_wild_card 	A path on to be removed on the scoop-hosts    
+
     scoop_hosts         A list of host adresses.
     """
     for hostname in scoop_hosts:
         with ScoopHost(hostname) as sch:
-            sch.execute('rm -rf /tmp/acp_irf_*')
+            sch.execute('rm -rf '+file_wild_card)
 
 
-def remove_tmp_corsika_dir_on_hosts(scoop_hosts):
-    """
-    Performs: 'rm -rf /tmp/corsika_*' on the hosts in the scoop_hosts list.
-
-    Parameters
-    ----------
-    scoop_hosts         A list of host adresses.
-    """
-    for hostname in scoop_hosts:
-        with ScoopHost(hostname) as sch:
-            sch.execute('rm -rf /tmp/corsika_*')
+def reset(scoop_hosts):
+    kill_all_processes_on_hosts('corsika', scoop_hosts)
+    kill_all_processes_on_hosts('mctracer', scoop_hosts)
+    kill_all_processes_on_hosts('scoop', scoop_hosts)
+    remove_file_on_hosts('/tmp/acp*', scoop_hosts)
+    remove_file_on_hosts('/tmp/corsika*', scoop_hosts)
 
 
 class ScoopHost(object):
