@@ -31,21 +31,24 @@ def analyse_acp_response(acp_response_path, output_path):
     pl.trigger_study.write_dict_to_file(event_info, output_path)
 
 
-def acp_response(corsika_run_path, output_path, cfg):
+def acp_response(corsika_run_path, output_path, cfg, photon_origins=False):
     """
     Calls the mctracer ACP propagation and saves the stdout and stderr
     """
     with open(output_path+'.stdout', 'w') as out, open(output_path+'.stderr', 'w') as err:
-        mct_rc = subprocess.call([
-            cfg['mct_acp_propagator'],
-            '-l', cfg['path']['main']['input']['acp_detector'],
-            '-c', cfg['path']['main']['input']['mct_acp_config'],
-            '-i', corsika_run_path,
-            '-o', output_path,
-            '-r', str(cfg['current_run']['mctracer_seed'])],
+        c = [   cfg['mct_acp_propagator'],
+                '-l', cfg['path']['main']['input']['acp_detector'],
+                '-c', cfg['path']['main']['input']['mct_acp_config'],
+                '-i', corsika_run_path,
+                '-o', output_path,
+                '-r', str(cfg['current_run']['mctracer_seed'])]
+        if photon_origins:
+            c.append('--all_truth')
+        mct_rc = subprocess.call(
+            c,
             stdout=out,
             stderr=err)
-    return mct_rc      
+    return mct_rc
 
 
 def simulate_acp_response(cfg):
