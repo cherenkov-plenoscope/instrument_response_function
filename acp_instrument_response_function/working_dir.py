@@ -16,8 +16,8 @@ def directory_structure(working_dir):
 
     p['main']['intermediate_results_of_runs'] = {}
     p['main']['intermediate_results_of_runs']['dir'] = os.path.join(
-        p['main']['dir'], 
-        'intermediate_results_of_runs')  
+        p['main']['dir'],
+        'intermediate_results_of_runs')
 
     p['main']['input']['acp_detector'] = os.path.join(
         p['main']['input']['dir'],
