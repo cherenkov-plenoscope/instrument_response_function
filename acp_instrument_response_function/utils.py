@@ -5,7 +5,6 @@ import xml.etree.ElementTree
 import os
 from os.path import join
 import shutil as sh
-import matplotlib.pyplot as plt
 import subprocess
 
 
@@ -61,11 +60,6 @@ def export_max_scatter_radius_vs_energy(
         np.c_[energy_bin_edges[1:], max_scatter_radius_in_bin],
         delimiter=', ',
         header='upper bin-edge energy/Gev, max_scatter_radius/m')
-    plt.plot(energy_bin_edges[: -1], max_scatter_radius_in_bin, 'x')
-    plt.loglog()
-    plt.xlabel('energy/GeV')
-    plt.ylabel('max scatter radius/m')
-    plt.savefig(join(directory, 'max_scatter_radius_vs_energy.png'))
 
 
 def make_corsika_steering_card(
