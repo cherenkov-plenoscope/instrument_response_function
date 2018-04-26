@@ -6,3 +6,4 @@ from . import header
 from . import gamma_limits_bridge
 from . import clean_up_scoop_cluster
 from . import utils
+from . import trigger_study_analysis
