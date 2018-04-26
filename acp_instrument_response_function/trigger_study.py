@@ -28,7 +28,7 @@ import tempfile
 import corsika_wrapper as cw
 import plenopy as pl
 import acp_instrument_response_function.utils as irfutils
-
+import random
 
 def trigger_study(
     acp_response_path,
@@ -212,7 +212,7 @@ if __name__ == '__main__':
             jobs.append(job)
 
         # Run simulation
-        jobs = list(reversed(jobs)) # High energy shall go first.
+        random.shuffle(jobs)
         return_codes = list(scoop.futures.map(run_acp_simulation, jobs))
 
     except docopt.DocoptExit as e:
