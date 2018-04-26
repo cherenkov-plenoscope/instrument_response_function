@@ -131,18 +131,21 @@ def read_acp_design_geometry(scenery_path):
 
 
 def energy_bins_and_max_scatter_radius(
-    max_scatter_radius_vs_energy,
+    energy,
+    max_scatter_radius,
     number_runs,
 ):
-    max_scatter_radius_vs_energy = np.array(max_scatter_radius_vs_energy)
+    assert (energy == np.sort(energy)).all(), (
+        "Expected the energies to be sorted")
+
     energy_bin_edges = np.logspace(
-        np.log10(np.min(max_scatter_radius_vs_energy[:, 0])),
-        np.log10(np.max(max_scatter_radius_vs_energy[:, 0])),
+        np.log10(np.min(energy)),
+        np.log10(np.max(energy)),
         number_runs + 1)
     max_scatter_radius_in_bin = interpolate_with_power10(
         x=energy_bin_edges[1:],
-        xp=max_scatter_radius_vs_energy[:, 0],
-        fp=max_scatter_radius_vs_energy[:, 1])
+        xp=energy,
+        fp=max_scatter_radius)
     return max_scatter_radius_in_bin, energy_bin_edges
 
 
