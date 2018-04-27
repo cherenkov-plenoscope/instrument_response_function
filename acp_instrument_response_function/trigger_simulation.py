@@ -186,3 +186,7 @@ def make_output_directory_and_jobs(
         job['trigger_threshold'] = steering_card['trigger_threshold']
         jobs.append(job)
     return jobs
+
+
+def job_energy_sort_key(d):
+    return float(d['corsika_steering_card']['ERANGE'].split()[1])
