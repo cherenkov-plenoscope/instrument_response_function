@@ -101,7 +101,7 @@ def run_analysis(path):
     max_scatter_area = np.pi*max_scatter_radii**2
     num_energy_bins = int(np.sqrt(energies.shape[0])/6)
 
-    number_energy_bins = int(np.sqrt(energies.shape[0]))
+    number_energy_bins = int(np.sqrt(energies.shape[0])/4)
     energy_bin_edges = np.logspace(
         np.log10(np.min(energies)),
         np.log10(np.max(energies)),
