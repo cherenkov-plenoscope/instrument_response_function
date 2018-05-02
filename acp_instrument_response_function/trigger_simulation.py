@@ -83,7 +83,9 @@ def run_job(job):
             output_path=job['intermediate_path'],
             past_trigger_path=job['past_trigger_dir'],
             run_number=job['run_number'],
-            patch_treshold=job['trigger_threshold'])
+            patch_treshold=job['trigger_patch_threshold'],
+            integration_time_in_slices=job[
+                'trigger_integration_time_in_slices'])
     return {
         'corsika_return_code': cor_rc,
         'mctracer_return_code': mct_rc}
@@ -94,7 +96,9 @@ def make_output_directory_and_jobs(
     output_path,
     acp_detector_path,
     mct_acp_config_path,
-    mct_acp_propagator_path
+    mct_acp_propagator_path,
+    trigger_patch_threshold=67,
+    trigger_integration_time_in_slices=5
 ):
     op = output_path
     imr = 'intermediate_results_of_runs'
@@ -183,7 +187,9 @@ def make_output_directory_and_jobs(
             op, 'stdout', '{:d}_corsika.stdout'.format(run+1))
         job['corsika_stderr_path'] = join(
             op, 'stdout', '{:d}_corsika.stderr'.format(run+1))
-        job['trigger_threshold'] = steering_card['trigger_threshold']
+        job['trigger_patch_threshold'] = trigger_patch_threshold
+        job['trigger_integration_time_in_slices'] = (
+            trigger_integration_time_in_slices)
         jobs.append(job)
     return jobs
 
