@@ -14,9 +14,9 @@ def trigger_study(
     past_trigger_path,
     run_number,
     pathch_treshold=67,
+    integration_time_in_slices=5
 ):
     run = pl.Run(acp_response_path)
-    integration_time_in_slices = 5
     min_number_neighbors = 3
 
     trigger_preparation = pl.trigger.prepare_refocus_sum_trigger(
