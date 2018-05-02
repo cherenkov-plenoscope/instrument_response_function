@@ -13,7 +13,7 @@ def trigger_study(
     output_path,
     past_trigger_path,
     run_number,
-    pathch_treshold=67,
+    patch_treshold=67,
     integration_time_in_slices=5
 ):
     run = pl.Run(acp_response_path)
@@ -38,7 +38,7 @@ def trigger_study(
         max_patch_threshold = np.max(
             [p['patch_threshold'] for p in info['refocus_sum_trigger']])
 
-        if max_patch_threshold >= pathch_treshold:
+        if max_patch_threshold >= patch_treshold:
             event_filename = '{run:d}{event:06d}'.format(
                 run=run_number,
                 event=event.number)
@@ -83,7 +83,7 @@ def run_job(job):
             output_path=job['intermediate_path'],
             past_trigger_path=job['past_trigger_dir'],
             run_number=job['run_number'],
-            pathch_treshold=job['trigger_threshold'])
+            patch_treshold=job['trigger_threshold'])
     return {
         'corsika_return_code': cor_rc,
         'mctracer_return_code': mct_rc}
