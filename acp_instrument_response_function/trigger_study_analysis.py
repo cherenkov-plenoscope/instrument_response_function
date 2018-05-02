@@ -8,7 +8,7 @@ from os.path import join
 from . import utils as irfutils
 
 
-def run_analysis(path):
+def run_analysis(path, patch_threshold=67):
     os.makedirs(join(path, 'results'), exist_ok=True)
 
     events = []
@@ -41,7 +41,7 @@ def run_analysis(path):
 
     # Trigger
     # -------
-    trigger_mask = ((thresholds >= 67).sum(axis=1)) >= 1
+    trigger_mask = ((thresholds >= patch_threshold).sum(axis=1)) >= 1
     # 1 out of 3, thresh 67, 0Hz accidental, 72.2
     # 2 out of 3, thresh 65, 0Hz accidental, 68.4
     # 3 out of 3, thresh 60, 0Hz accidental, 70.4
