@@ -192,7 +192,3 @@ def make_output_directory_and_jobs(
             trigger_integration_time_in_slices)
         jobs.append(job)
     return jobs
-
-
-def job_energy_sort_key(d):
-    return float(d['corsika_steering_card']['ERANGE'].split()[1])
