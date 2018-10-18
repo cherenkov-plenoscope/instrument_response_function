@@ -52,9 +52,6 @@ def run_analysis(path, patch_threshold=67):
     # Trigger
     # -------
     trigger_mask = ((thresholds >= patch_threshold).sum(axis=1)) >= 1
-    # 1 out of 3, thresh 67, 0Hz accidental, 72.2
-    # 2 out of 3, thresh 65, 0Hz accidental, 68.4
-    # 3 out of 3, thresh 60, 0Hz accidental, 70.4
 
     bins = np.zeros(22)
     bins[1] = 1
