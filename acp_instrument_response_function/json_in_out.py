@@ -2,7 +2,7 @@ import os
 import gzip, json
 
 
-def write_json_dictionary(result, path):
+def write_json_dictionary(result, path, indent=None):
     """
     Saves a python dictionary into a json file.
     """
@@ -16,7 +16,7 @@ def write_json_dictionary(result, path):
             json.dump(out, outfile)
     else:
         with open(path, 'w') as outfile:
-            json.dump(out, outfile)
+            json.dump(out, outfile, indent=indent)
 
 
 def read_json_dictionary(path):
