@@ -9,6 +9,10 @@ from . import utils as irfutils
 
 
 def run_analysis(path, patch_threshold=67):
+    figsize = (8, 4)
+    dpi = 240
+    ax_size = (0.13, 0.13, 0.84, 0.84)
+
     os.makedirs(join(path, 'results'), exist_ok=True)
 
     events = []
@@ -105,6 +109,17 @@ def run_analysis(path, patch_threshold=67):
     ax2.set_ylabel('probability to trigger/1')
     plt.savefig(os.path.join(path, 'results', 'trigger.png'))
 
+    with open(join(path, 'results', 'cherenkov_photons.json'), 'wt') as fout:
+        fout.write(json.dumps({
+            'true_cherenkov_photons_bin_edges':
+                bins.tolist(),
+            'true_cherenkov_photons_bin_counts_triggered':
+                wt.tolist(),
+            'true_cherenkov_photons_bin_counts_thrown':
+                wwot.tolist()
+            },
+            indent=2))
+
     max_scatter_area = np.pi*max_scatter_radii**2
     num_energy_bins = int(np.sqrt(energies.shape[0])/6)
 
@@ -145,34 +160,23 @@ def run_analysis(path, patch_threshold=67):
 
     effective_area_trigger = area_detected_trigger/area_thrown*(
         area_thrown/num_thrown)
-    effective_area_analysis = area_detected_analysis/area_thrown*(
-        area_thrown/num_thrown)
-    effective_area_100pe = area_detected_100pe/area_thrown*(
-        area_thrown/num_thrown)
 
-    plt.figure()
+    fig = plt.figure(figsize=figsize, dpi=dpi)
+    ax = fig.add_axes(ax_size)
     l0, = plt.step(
         energy_bin_edges[:-1],
         effective_area_trigger,
         'k',
         label='trigger')
-    l1, = plt.step(
-        energy_bin_edges[:-1],
-        effective_area_analysis,
-        'r',
-        label='trigger && >= 100pe')
-    l2, = plt.step(
-        energy_bin_edges[:-1],
-        effective_area_100pe,
-        'b',
-        label='>= 100pe')
-    plt.legend(handles=[l0, l1, l2])
-    plt.semilogx()
-    plt.semilogy()
-    plt.ylabel('effective area/m**2')
-    plt.xlabel('energy/GeV')
-    plt.savefig(os.path.join(path, 'results', 'effective_area.png'))
-
+    ax.legend(handles=[l0])
+    ax.semilogx()
+    ax.semilogy()
+    ax.set_ylabel(r'effective area/m$^2$')
+    ax.set_xlabel(r'energy/GeV')
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.grid(color='k', linestyle='-', linewidth=0.66, alpha=0.1)
+    fig.savefig(os.path.join(path, 'results', 'effective_area.png'))
 
     steering_card = irfutils.read_json(join(path, 'input', 'steering.json'))
     acp_geometry = irfutils.read_acp_design_geometry(join(
@@ -250,9 +254,6 @@ def run_analysis(path, patch_threshold=67):
                 alpha=alpha_boxes,
                 linewidth=0)
 
-    figsize = (8, 4)
-    dpi = 240
-    ax_size = (0.13, 0.13, 0.84, 0.84)
 
     # Visualize impact-scatter-range
     scatter_radius_squared_bin_edges = np.linspace(
@@ -268,7 +269,7 @@ def run_analysis(path, patch_threshold=67):
         scatter_radii**2,
         scatter_radius_squared_bin_edges)[0]
 
-    with open(os.path.join(path, 'results', 'scatter_radius.json'), 'wt') as fout:
+    with open(join(path, 'results', 'scatter_radius.json'), 'wt') as fout:
         fout.write(json.dumps({
             'scatter_radius_squared_bin_edges':
                 scatter_radius_squared_bin_edges.tolist(),
@@ -276,7 +277,8 @@ def run_analysis(path, patch_threshold=67):
                 scatter_radius_squared_bin_counts_triggered.tolist(),
             'scatter_radius_squared_bin_counts_thrown':
                 scatter_radius_squared_bin_counts_thrown.tolist()
-            }))
+            },
+            indent=2))
 
     count_error = (np.sqrt(scatter_radius_squared_bin_counts_triggered)/
         scatter_radius_squared_bin_counts_triggered)
@@ -317,24 +319,24 @@ def run_analysis(path, patch_threshold=67):
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.grid(color='k', linestyle='-', linewidth=0.66, alpha=0.1)
-    fig.savefig(os.path.join(path, 'results', 'scatter_radius_thrown_and_triggered.png'))
+    fig.savefig(join(path, 'results', 'scatter_radius_thrown_and_triggered.png'))
 
 
     if np.max(zenith_distances[trigger_mask])**2 > 0.0:
         scatter_angle_squared_bin_edges = np.linspace(
             0,
-            np.max(zenith_distances[trigger_mask])**2,
+            np.max(np.rad2deg(zenith_distances[trigger_mask]))**2,
             np.int(np.sqrt(np.sum(trigger_mask))/2))
 
         scatter_angle_squared_bin_counts_triggered = np.histogram(
-            zenith_distances[trigger_mask]**2,
+            np.rad2deg(zenith_distances[trigger_mask])**2,
             scatter_angle_squared_bin_edges)[0]
 
         scatter_angle_squared_bin_counts_thrown = np.histogram(
-            zenith_distances**2,
+            np.rad2deg(zenith_distances)**2,
             scatter_angle_squared_bin_edges)[0]
 
-        with open(os.path.join(path, 'results', 'scatter_angle.json'), 'wt') as fout:
+        with open(join(path, 'results', 'scatter_angle.json'), 'wt') as fout:
             fout.write(json.dumps({
                 'scatter_angle_squared_bin_edges':
                     scatter_angle_squared_bin_edges.tolist(),
@@ -342,7 +344,8 @@ def run_analysis(path, patch_threshold=67):
                     scatter_angle_squared_bin_counts_triggered.tolist(),
                 'scatter_angle_squared_bin_counts_thrown':
                     scatter_angle_squared_bin_counts_thrown.tolist(),
-                }))
+                },
+                indent=2))
 
         count_error = (np.sqrt(scatter_angle_squared_bin_counts_triggered)/
             scatter_angle_squared_bin_counts_triggered)
@@ -358,12 +361,12 @@ def run_analysis(path, patch_threshold=67):
             bin_counts_error_low=1e2*count_ratio*(1 - count_error),
             bin_counts_error_high=1e2*count_ratio*(1 + count_error),
             bin_edges=scatter_angle_squared_bin_edges,)
-        ax.set_xlabel(r'(Scatter-angle)$^2$/(rad)$^2$')
+        ax.set_xlabel(r'(Scatter-angle)$^2$/(deg)$^2$')
         ax.set_ylabel(r'Trigger-probability/%')
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
         ax.grid(color='k', linestyle='-', linewidth=0.66, alpha=0.1)
-        ax.axvline(x=np.deg2rad(3.25)**2, color='k', linestyle=':')
+        ax.axvline(x=3.25**2, color='k', linestyle=':')
         fig.savefig(os.path.join(path, 'results', 'scatter_angle.png'))
 
 
@@ -379,12 +382,12 @@ def run_analysis(path, patch_threshold=67):
                 [scatter_angle_squared_bin_counts_thrown[i], scatter_angle_squared_bin_counts_thrown[i]],
                 'k')
         ax.semilogy()
-        ax.set_xlabel(r'(Scatter-angle)$^2$/(rad)$^2$')
+        ax.set_xlabel(r'(Scatter-angle)$^2$/(deg)$^2$')
         ax.set_ylabel(r'Number events/1')
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
         ax.grid(color='k', linestyle='-', linewidth=0.66, alpha=0.1)
-        ax.axvline(x=np.deg2rad(3.25)**2, color='k', linestyle=':')
-        fig.savefig(os.path.join(path, 'results', 'scatter_angle_thrown_and_triggered.png'))
+        ax.axvline(x=3.25**2, color='k', linestyle=':')
+        fig.savefig(join(path, 'results', 'scatter_angle_thrown_and_triggered.png'))
 
     plt.close('all')
