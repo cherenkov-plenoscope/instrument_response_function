@@ -5,15 +5,15 @@ Instrument Response Function (IRF)
 
 For the Atmospheric Cherenkov Plenoscope (ACP)
 
-- Air shower simulations [CORSIKA](https://github.com/TheBigLebowSky/custom_corsika)
-- ACP response simulation [mctracer](https://github.com/TheBigLebowSky/mctracer)
-- ACP event analysis [plenopy](https://github.com/TheBigLebowSky/plenopy)
+- Air shower simulations [CORSIKA](https://github.com/cherenkov-plenoscope/corsika_install)
+- ACP response simulation [merlict](https://github.com/cherenkov-plenoscope/merlict_development_kit)
+- ACP event analysis [plenopy](https://github.com/cherenkov-plenoscope/plenopy)
 
 Runs with python [scoop](https://github.com/soravux/scoop) for massive parallel deployment over many machines, but also runs on a single machine.
 
 ## Install
 ```bash
-pip install git+https://github.com/TheBigLebowSky/instrument_response_function
+pip install git+https://github.com/cherenkov-plenoscope/instrument_response_function
 ```
 
 ## How to run a simulation
@@ -36,4 +36,4 @@ In [2]: acp_irf.analysis.export_effective_area(
 ![img](example/example_effective_area_50mACP_electron_above_100pe.png)
 
 ## What does it do?
-When started, an output directory is created ```OUTPUT_PATH``` and all input (corsika steering card, plenoscope scenery, and calibration) is copied into the output path first. Only the copied input is used during the simulation. Next, all the corsika steering cards are created using the template card in ```CORSIKA_CARD```. Only the run number and random seeds are adjusted for each run. Now scoop is used to deploy the simulation jobs onto your cluster ```SCOOP_HOSTS```. A single production job runs the CORSIKA [threadsafe](https://github.com/fact-project/corsika_wrapper) air shower simulation which writes a temporary file of Cherenkov photons. Next the [mctracer](https://github.com/TheBigLebowSky/mctracer) simulates the plensocope responses and also writes them to a temporary file. Next [plenopy](https://github.com/TheBigLebowSky/plenopy) runs an analysis on the temporary plenoscope response and extracts high level information which are stored permanently in the output path. After all simulation jobs are done, the intermediate analysis results by plenopy are condensed in one single ```acp_event_responses.json.gz``` in the output path.
+When started, an output directory is created ```OUTPUT_PATH``` and all input (corsika steering card, plenoscope scenery, and calibration) is copied into the output path first. Only the copied input is used during the simulation. Next, all the corsika steering cards are created using the template card in ```CORSIKA_CARD```. Only the run number and random seeds are adjusted for each run. Now scoop is used to deploy the simulation jobs onto your cluster ```SCOOP_HOSTS```. A single production job runs the CORSIKA [threadsafe](https://github.com/fact-project/merlict_development_kit) air shower simulation which writes a temporary file of Cherenkov photons. Next the [merlict](https://github.com/cherenkov-plenoscope/mctracer) simulates the plensocope responses and also writes them to a temporary file. Next [plenopy](https://github.com/cherenkov-plenoscope/plenopy) runs an analysis on the temporary plenoscope response and extracts high level information which are stored permanently in the output path. After all simulation jobs are done, the intermediate analysis results by plenopy are condensed in one single ```acp_event_responses.json.gz``` in the output path.
