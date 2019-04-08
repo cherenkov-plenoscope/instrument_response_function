@@ -55,7 +55,7 @@ def remove_file_on_hosts(file_wild_card, scoop_hosts):
 
 def reset(scoop_hosts):
     kill_all_processes_on_hosts('corsika', scoop_hosts)
-    kill_all_processes_on_hosts('mctracer', scoop_hosts)
+    kill_all_processes_on_hosts('merlict', scoop_hosts)
     kill_all_processes_on_hosts('scoop', scoop_hosts)
     remove_file_on_hosts('/tmp/acp*', scoop_hosts)
     remove_file_on_hosts('/tmp/corsika*', scoop_hosts)
