@@ -5,7 +5,7 @@ setup(
     version='0.0.3',
     description='Simulates the instrument response of the ' +
     'Atmospheric-Cherenkov-Plenoscope (ACP)',
-    url='https://github.com/TheBigLebowSky/instrument_response_function.git',
+    url='https://github.com/cherenkov-plenoscope/instrument_response_function.git',
     author='Sebastian Achim Mueller',
     author_email='sebmuell@phys.ethz.ch',
     license='GPL v3',

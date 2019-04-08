@@ -33,7 +33,7 @@ def analyse_acp_response(acp_response_path, output_path):
 
 def acp_response(corsika_run_path, output_path, cfg, photon_origins=False):
     """
-    Calls the mctracer ACP propagation and saves the stdout and stderr
+    Calls the merlict ACP propagation and saves the stdout and stderr
     """
     op = output_path
     with open(op+'.stdout', 'w') as out, open(op+'.stderr', 'w') as err:
@@ -57,11 +57,11 @@ def simulate_acp_response(cfg):
     """
     Simulates and analyses one run.
         - CORSIKA air shower simulation
-        - mctracer ACP response simulation
+        - merlict ACP response simulation
         - plenopy ACP response high level analysis
 
     Only the high level results of plenopy are stored. The 'airshower.evtio'
-    files and the ACP response files 'acp_response.acp' will be removed.
+    files and the ACP response files will be removed.
     """
     with tempfile.TemporaryDirectory(prefix='acp_irf_') as tmp_dir:
         corsika_run_path = os.path.join(tmp_dir, 'airshower.evtio')

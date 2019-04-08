@@ -10,9 +10,9 @@ Options:
     -o --output_path=PATH           Path to write the output directroy.
     -a --acp_detector=PATH          Path to the light-field-geometry of the
                                     ACP.
-    -p --mct_acp_config=PATH        Path to the mctracer ACP propagation
+    -p --mct_acp_config=PATH        Path to the merlict ACP propagation
                                     configuration.
-    -m --mct_acp_propagator=PATH    Path to the mctracer ACP propagation
+    -m --mct_acp_propagator=PATH    Path to the merlict ACP propagation
                                     executable.
 """
 import docopt

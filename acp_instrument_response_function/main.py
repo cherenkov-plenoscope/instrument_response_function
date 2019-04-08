@@ -13,9 +13,9 @@ Options:
                                                 corsika steering template card.
     -a --acp_detector=ACP_DETECTOR              Path to Atmospheric Cherenkov
                                                 Plenoscope (lixel statistics).
-    -p --mct_acp_config=MCT_ACP_CONFIG          Path to the mctracer ACP
+    -p --mct_acp_config=MCT_ACP_CONFIG          Path to the merlict ACP
                                                 propagation configuration.
-    -m --mct_acp_propagator=MCT_ACP_PROPAGATOR  Path to the mctracer ACP
+    -m --mct_acp_propagator=MCT_ACP_PROPAGATOR  Path to the merlict ACP
                                                 propagation executable.
 """
 import docopt

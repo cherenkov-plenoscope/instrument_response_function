@@ -153,7 +153,8 @@ def run_acp(
     photon_origins=True
 ):
     """
-    Calls the mctracer ACP propagation and saves the stdout and stderr
+    Calls the merlict Cherenkov-plenoscope propagation
+    and saves the stdout and stderr
     """
     op = output_path
     with open(op+'.stdout', 'w') as out, open(op+'.stderr', 'w') as err:

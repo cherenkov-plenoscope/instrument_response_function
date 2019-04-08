@@ -14,9 +14,9 @@ Options:
                                             Path to the light-field-geometry of
                                             the ACP.
     -p --mct_acp_config=PATH            [default: resources/acp/mct_propagation_config.xml]
-                                            Path to the mctracer ACP propagation configuration.
-    -m --mct_acp_propagator=PATH        [default: build/mctracer/mctPlenoscopePropagation]
-                                            Path to the mctracer ACP propagation executable.
+                                            Path to the merlict ACP propagation configuration.
+    -m --mct_acp_propagator=PATH        [default: build/merlict/merlict-plenoscope-propagation]
+                                            Path to the merlict ACP propagation executable.
 """
 import docopt
 import scoop
