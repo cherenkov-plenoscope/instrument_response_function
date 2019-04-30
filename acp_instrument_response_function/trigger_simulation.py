@@ -115,8 +115,8 @@ def make_output_directory_and_jobs(
     steering_card_path = join(op, 'input', 'steering.json')
     sh.copy(
         mct_acp_config_path,
-        join(op, 'input', 'mct_acp_config.xml'))
-    mct_acp_config_path = join(op, 'input', 'mct_acp_config.xml')
+        join(op, 'input', 'mct_acp_config.json'))
+    mct_acp_config_path = join(op, 'input', 'mct_acp_config.json')
     sh.copytree(
         acp_detector_path,
         join(op, 'input', 'acp_detector'))
@@ -135,7 +135,7 @@ def make_output_directory_and_jobs(
             'acp_detector',
             'input',
             'scenery',
-            'scenery.xml'))
+            'scenery.json'))
 
     # Prepare simulation
     max_scatter_radius_in_bin, energy_bin_edges = (

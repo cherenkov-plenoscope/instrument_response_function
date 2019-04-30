@@ -29,7 +29,7 @@ def directory_structure(working_dir):
 
     p['main']['input']['mct_acp_config'] = os.path.join(
         p['main']['input']['dir'],
-        'mct_acp_config.xml')
+        'mct_acp_config.json')
 
     p['main']['acp_event_responses'] = os.path.join(
         p['main']['dir'],

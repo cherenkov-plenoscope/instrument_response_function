@@ -1,10 +1,10 @@
-import xml.etree.ElementTree
+import json
 import os
 
 
 def make_summary_header(cfg):
     out = ''
-    out += '# Atmospheric Cherenkov Plenoscope (ACP)\n'
+    out += '# Cherenkov-Plenoscope\n'
     out += '#\n'
     out += '# Authors:\n'
     out += '#     Sebastian A. Mueller\n'
@@ -32,23 +32,11 @@ def particle_information(steering_card_template):
 
 def acp_information(cfg):
     acp_path = cfg['path']['main']['input']['acp_detector']
-    scenery_path = os.path.join(acp_path, 'input/scenery/scenery.xml')
-    tree = xml.etree.ElementTree.parse(scenery_path).getroot()
-
-    acp_node = tree.find('frame').find('light_field_sensor').find(
-        'set_light_field_sensor')
-
-    info = {
-        'expected_imaging_system_focal_length': acp_node.get(
-            'expected_imaging_system_focal_length'),
-        'expected_imaging_system_aperture_radius': acp_node.get(
-            'expected_imaging_system_aperture_radius'),
-        'max_FoV_diameter_deg': acp_node.get('max_FoV_diameter_deg'),
-        'hex_pixel_FoV_flat2flat_deg': acp_node.get(
-            'hex_pixel_FoV_flat2flat_deg'),
-        'housing_overhead': acp_node.get('housing_overhead')}
-
+    scenery_path = os.path.join(acp_path, 'input', 'scenery', 'scenery.json')
+    with open(scenery_path, "rt") as fin:
+        tree = json.loads(fin.read())
+    txt = json.dumps(tree, indent=2)
     out = ''
-    for key in info:
-        out += '# '+'    '+key+' '+info[key]+'\n'
+    for line in txt.splitlines():
+        out += '#   ' + line
     return out

@@ -183,7 +183,7 @@ def run_analysis(path, patch_threshold=67):
 
     steering_card = irfutils.read_json(join(path, 'input', 'steering.json'))
     acp_geometry = irfutils.read_acp_design_geometry(
-        join(path, 'input', 'acp_detector', 'input', 'scenery', 'scenery.xml'))
+        join(path, 'input', 'acp_detector', 'input', 'scenery', 'scenery.json'))
 
     export_acceptance(
         path=join(path, 'results', 'irf.csv'),
