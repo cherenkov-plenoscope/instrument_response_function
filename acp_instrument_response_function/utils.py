@@ -109,7 +109,14 @@ def make_corsika_steering_card(
 
 
 def read_acp_design_geometry(scenery_path):
-    return read_json(scenery_path)
+    children = read_json(scenery_path)['children']
+    for child in children:
+        if child["type"] == "Frame" and child["name"] == "Portal":
+            protal = child.copy()
+    for child in protal['children']:
+        if child["type"] == "LightFieldSensor":
+            light_field_sensor = child.copy()
+    return light_field_sensor
 
 
 def energy_bins_and_max_scatter_radius(
