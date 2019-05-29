@@ -12,6 +12,8 @@ setup(
     packages=[
         'acp_instrument_response_function',
     ],
+    package_data={'acp_instrument_response_function': [
+        'tests/resources/*']},
     install_requires=[
         'docopt',
         'scoop',

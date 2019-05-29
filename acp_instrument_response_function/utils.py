@@ -109,19 +109,7 @@ def make_corsika_steering_card(
 
 
 def read_acp_design_geometry(scenery_path):
-    tree = xml.etree.ElementTree.parse(scenery_path).getroot()
-    acp_node = tree.find('frame').find('light_field_sensor').find(
-        'set_light_field_sensor')
-    info = {
-        'expected_imaging_system_focal_length': float(acp_node.get(
-            'expected_imaging_system_focal_length')),
-        'expected_imaging_system_aperture_radius': float(acp_node.get(
-            'expected_imaging_system_aperture_radius')),
-        'max_FoV_diameter_deg': float(acp_node.get('max_FoV_diameter_deg')),
-        'hex_pixel_FoV_flat2flat_deg': float(acp_node.get(
-            'hex_pixel_FoV_flat2flat_deg')),
-        'housing_overhead': float(acp_node.get('housing_overhead'))}
-    return info
+    return read_json(scenery_path)
 
 
 def energy_bins_and_max_scatter_radius(
