@@ -44,6 +44,7 @@ def trigger_study(
                 event=event.number)
             event_path = join(past_trigger_path, event_filename)
             sh.copytree(event._path, event_path)
+            pl.compress_event_in_place(event_path)
             pl.trigger_study.write_dict_to_file(
                 pl.trigger_study.un_numpyify(info['refocus_sum_trigger']),
                 join(event_path, 'refocus_sum_trigger.json'))
