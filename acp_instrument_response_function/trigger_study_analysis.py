@@ -3,7 +3,6 @@ import json
 import gzip
 import os
 import numpy as np
-from os.path import join
 from . import utils as irfutils
 from . import json_in_out
 
@@ -112,7 +111,7 @@ def estimate_effective_area(
         'num_detected': num_detected,
         'area_thrown': area_thrown,
         'area_detected': area_detected,
-        'effective_area': effective_area,}
+        'effective_area': effective_area, }
 
 
 def export_acceptance(
@@ -132,7 +131,7 @@ def export_acceptance(
 
     acceptence_cm2 = effective_area['effective_area']*1e2*1e2
 
-    out =  '# Atmospheric-Cherenkov-Plenoscope\n'
+    out = '# Atmospheric-Cherenkov-Plenoscope\n'
     out += '# --------------------------------\n'
     out += '#\n'
     out += '# Sebastian A. Mueller\n'
@@ -168,7 +167,7 @@ def export_acceptance(
 
 
 def run_analysis(path, patch_threshold=67):
-    os.makedirs(join(path, 'results'), exist_ok=True)
+    os.makedirs(os.path.join(path, 'results'), exist_ok=True)
     events = flatten(
         read_intermediate_results(
             os.path.join(path, 'intermediate_results_of_runs')))
@@ -181,22 +180,24 @@ def run_analysis(path, patch_threshold=67):
         energies=events['energies'],
         trigger_mask=events['trigger_mask'])
 
-    steering_card = irfutils.read_json(join(path, 'input', 'steering.json'))
+    steering_card = irfutils.read_json(
+        os.path.join(path, 'input', 'steering.json'))
     acp_geometry = irfutils.read_acp_design_geometry(
-        join(path, 'input', 'acp_detector', 'input', 'scenery', 'scenery.json'))
+        os.path.join(
+            path, 'input', 'acp_detector', 'input', 'scenery', 'scenery.json'))
 
     export_acceptance(
-        path=join(path, 'results', 'irf.csv'),
+        path=os.path.join(path, 'results', 'irf.csv'),
         effective_area=effective_area,
         steering_card=steering_card,
         acp_geometry=acp_geometry,)
 
     json_in_out.write_json_dictionary(
         result=effective_area,
-        path=join(path, 'results', 'effective_area.json'),
+        path=os.path.join(path, 'results', 'effective_area.json'),
         indent=2)
 
     json_in_out.write_json_dictionary(
         result=events,
-        path=join(path, 'results', 'events.json'),
+        path=os.path.join(path, 'results', 'events.json'),
         indent=2)

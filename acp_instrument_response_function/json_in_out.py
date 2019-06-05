@@ -1,5 +1,6 @@
 import os
-import gzip, json
+import gzip
+import json
 
 
 def write_json_dictionary(result, path, indent=None):

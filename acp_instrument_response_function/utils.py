@@ -1,10 +1,7 @@
 import numpy as np
 import json
 from collections import OrderedDict
-import xml.etree.ElementTree
 import os
-from os.path import join
-import shutil as sh
 import subprocess
 
 
@@ -56,7 +53,7 @@ def export_max_scatter_radius_vs_energy(
     directory
 ):
     np.savetxt(
-        join(directory, 'max_scatter_radius_vs_energy.csv'),
+        os.path.join(directory, 'max_scatter_radius_vs_energy.csv'),
         np.c_[energy_bin_edges[1:], max_scatter_radius_in_bin],
         delimiter=', ',
         header='upper bin-edge energy/Gev, max_scatter_radius/m')
@@ -89,7 +86,7 @@ def make_corsika_steering_card(
         '{:d} 0 0'.format(random_seed + run_number),
         '{:d} 0 0'.format(random_seed + run_number + 1),
         '{:d} 0 0'.format(random_seed + run_number + 2),
-        '{:d} 0 0'.format(random_seed + run_number + 3),]
+        '{:d} 0 0'.format(random_seed + run_number + 3), ]
     c['OBSLEV'] = ['{:3.3e}'.format(observation_level_altitude_asl*1e2)]
     c['FIXCHI'] = ['0.']
     c['MAGNET'] = ['1e-99 1e-99']
@@ -100,7 +97,7 @@ def make_corsika_steering_card(
     c['ATMOSPHERE'] = ['{:d} T'.format(atmosphere_model)]
     c['CWAVLG'] = ['250 700']
     c['CSCAT'] = ['1 {:3.3e} 0.0'.format(max_scatter_radius*1e2)]
-    c['CERQEF'] = ['F T F'] # pde, atmo, mirror
+    c['CERQEF'] = ['F T F']  # pde, atmo, mirror
     c['CERSIZ'] = ['1']
     c['CERFIL'] = ['F']
     c['TSTART'] = ['T']

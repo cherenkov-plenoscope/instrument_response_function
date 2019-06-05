@@ -29,20 +29,20 @@ def make_flat_run(run_path):
             height: [4.5, 4.3, 4.1],}
     """
     json_dict = read_json_dictionary(run_path)
-    return flatten_run_dict(json_dict)   
+    return flatten_run_dict(json_dict)
 
 
 def condese_intermediate_runs(intermediate_runs_dir, output_path):
     """
     Reads in the intermediate run results and condeses the ACP event responses
-    in these run_XXX.josn.gz files into one singel dictionary which is stored 
+    in these run_XXX.josn.gz files into one singel dictionary which is stored
     into a JSON file.
     (single thread)
 
     Parameter
     ---------
     intermediate_runs_dir       Path to the intermediate run results directory.
-    output_path                 Path to the output JSON of the ACP event 
+    output_path                 Path to the output JSON of the ACP event
                                 responses.
 
     """
@@ -84,7 +84,7 @@ def flatten_run_dict(run_dict):
 
     Parameter
     ---------
-    run_dict        The non-flat run dictionary as it is stored in the 
+    run_dict        The non-flat run dictionary as it is stored in the
                     intermediate plenoscope responses (json files)
 
     Example for flat and non flat
@@ -109,7 +109,7 @@ def flatten_run_dict(run_dict):
     core_x = []
     core_y = []
     zenith = []
-    azimuth =[]
+    azimuth = []
     scatter_radius = []
 
     for event in run_dict:
@@ -118,7 +118,8 @@ def flatten_run_dict(run_dict):
 
         raw_lixel_sum.append(event['acp']['response']['raw_lixel']['sum'])
 
-        primary_particle_id.append(event['simulation_truth']['primary_particle']['id'])
+        primary_particle_id.append(
+            event['simulation_truth']['primary_particle']['id'])
         primary_particle_energy.append(event['simulation_truth']['energy'])
 
         core_x.append(event['simulation_truth']['core_position']['x'])
@@ -135,7 +136,8 @@ def flatten_run_dict(run_dict):
         'raw_lixel_sum': np.array(raw_lixel_sum, dtype=np.float32),
 
         'primary_particle_id': np.array(primary_particle_id, dtype=np.int32),
-        'primary_particle_energy': np.array(primary_particle_energy, dtype=np.float32),
+        'primary_particle_energy': np.array(
+            primary_particle_energy, dtype=np.float32),
         'core_position_x': np.array(core_x, dtype=np.float32),
         'core_position_y': np.array(core_y, dtype=np.float32),
         'zenith': np.array(zenith, dtype=np.float32),
