@@ -93,7 +93,7 @@ def make_corsika_steering_card(
     c['FIXCHI'] = ['0.']
     c['MAGNET'] = ['{BX:3.3e} {BZ:3.3e}'.format(
         BX=earth_magnetic_field_x_muT,
-        BZ=earth_magnetic_field_Z_muT)]
+        BZ=earth_magnetic_field_z_muT)]
     c['ELMFLG'] = ['T T']
     c['MAXPRT'] = ['1']
     c['PAROUT'] = ['F F']
