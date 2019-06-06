@@ -71,6 +71,8 @@ def make_corsika_steering_card(
     observation_level_altitude_asl,
     instrument_radius,
     atmosphere_model,
+    earth_magnetic_field_x_muT,
+    earth_magnetic_field_z_muT
 ):
     c = OrderedDict()
     c['RUNNR'] = ['{:d}'.format(run_number)]
@@ -89,7 +91,9 @@ def make_corsika_steering_card(
         '{:d} 0 0'.format(random_seed + run_number + 3), ]
     c['OBSLEV'] = ['{:3.3e}'.format(observation_level_altitude_asl*1e2)]
     c['FIXCHI'] = ['0.']
-    c['MAGNET'] = ['1e-99 1e-99']
+    c['MAGNET'] = ['{BX:3.3e} {BZ:3.3e}'.format(
+        BX=earth_magnetic_field_x_muT,
+        BZ=earth_magnetic_field_Z_muT)]
     c['ELMFLG'] = ['T T']
     c['MAXPRT'] = ['1']
     c['PAROUT'] = ['F F']

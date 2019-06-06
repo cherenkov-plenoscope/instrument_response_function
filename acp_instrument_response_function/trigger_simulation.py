@@ -93,7 +93,8 @@ def run_job(job):
 
 
 def make_output_directory_and_jobs(
-    steering_card_path,
+    particle_steering_card_path,
+    location_steering_card_path,
     output_path,
     acp_detector_path,
     mct_acp_config_path,
@@ -111,9 +112,11 @@ def make_output_directory_and_jobs(
     os.makedirs(join(op, 'stdout'))
     os.makedirs(join(op, 'past_trigger'))
     sh.copy(
-        steering_card_path,
-        join(op, 'input', 'steering.json'))
-    steering_card_path = join(op, 'input', 'steering.json')
+        particle_steering_card_path,
+        join(op, 'input', 'particle_steering_card.json'))
+    sh.copy(
+        location_steering_card_path,
+        join(op, 'input', 'location_steering_card.json'))
     sh.copy(
         mct_acp_config_path,
         join(op, 'input', 'mct_acp_config.json'))
@@ -124,11 +127,10 @@ def make_output_directory_and_jobs(
     acp_detector_path = join(op, 'input', 'acp_detector')
 
     # Read input
-    steering_card = irfutils.read_json(
-        join(
-            op,
-            'input',
-            'steering.json'))
+    particle_steering_card = irfutils.read_json(
+        join(op, 'input', 'particle_steering_card.json'))
+    location_steering_card = irfutils.read_json(
+        join(op, 'input', 'location_steering_card.json'))
     acp_geometry = irfutils.read_acp_design_geometry(
         join(
             op,
@@ -141,9 +143,9 @@ def make_output_directory_and_jobs(
     # Prepare simulation
     max_scatter_radius_in_bin, energy_bin_edges = (
         irfutils.energy_bins_and_max_scatter_radius(
-            energy=steering_card['energy'],
-            max_scatter_radius=steering_card['max_scatter_radius'],
-            number_runs=steering_card['number_runs']))
+            energy=particle_steering_card['energy'],
+            max_scatter_radius=particle_steering_card['max_scatter_radius'],
+            number_runs=particle_steering_card['number_runs']))
 
     irfutils.export_max_scatter_radius_vs_energy(
         energy_bin_edges=energy_bin_edges,
@@ -151,27 +153,31 @@ def make_output_directory_and_jobs(
         directory=join(op, 'input'))
 
     jobs = []
-    for run in range(steering_card['number_runs']):
+    for run in range(particle_steering_card['number_runs']):
         job = {}
         job['run_number'] = run+1
         job['corsika_steering_card'] = irfutils.make_corsika_steering_card(
-            random_seed=steering_card['random_seed'],
+            random_seed=particle_steering_card['random_seed'],
             run_number=job['run_number'],
-            number_events_in_run=steering_card['number_events_in_run'],
+            number_events_in_run=particle_steering_card['number_events_in_run'],
             primary_particle=irfutils.primary_particle_to_corsika(
-                steering_card['primary_particle']),
+                particle_steering_card['primary_particle']),
             E_start=energy_bin_edges[run],
             E_stop=energy_bin_edges[run + 1],
             max_zenith_scatter_angle_deg=irfutils.max_zenith_scatter_angle_deg(
-                steering_card['source_geometry'],
+                particle_steering_card['source_geometry'],
                 acp_geometry['max_FoV_diameter_deg']),
             max_scatter_radius=max_scatter_radius_in_bin[run],
-            observation_level_altitude_asl=steering_card[
+            observation_level_altitude_asl=location_steering_card_path[
                 'observation_level_altitude_asl'],
             instrument_radius=acp_geometry[
                 'expected_imaging_system_aperture_radius']*1.1,
             atmosphere_model=irfutils.atmosphere_model_to_corsika(
-                steering_card['atmosphere_model']))
+                location_steering_card_path['atmosphere_model']),
+            earth_magnetic_field_x_muT=
+                location_steering_card_path['earth_magnetic_field_x_muT'],
+            earth_magnetic_field_z_muT=
+                location_steering_card_path['earth_magnetic_field_z_muT'])
         job['acp_detector_path'] = acp_detector_path
         job['intermediate_path'] = join(
             op, imr, '{:d}.json.gz'.format(run+1))
