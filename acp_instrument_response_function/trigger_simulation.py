@@ -168,16 +168,16 @@ def make_output_directory_and_jobs(
                 particle_steering_card['source_geometry'],
                 acp_geometry['max_FoV_diameter_deg']),
             max_scatter_radius=max_scatter_radius_in_bin[run],
-            observation_level_altitude_asl=location_steering_card_path[
+            observation_level_altitude_asl=location_steering_card[
                 'observation_level_altitude_asl'],
             instrument_radius=acp_geometry[
                 'expected_imaging_system_aperture_radius']*1.1,
             atmosphere_model=irfutils.atmosphere_model_to_corsika(
-                location_steering_card_path['atmosphere_model']),
+                location_steering_card['atmosphere_model']),
             earth_magnetic_field_x_muT=
-                location_steering_card_path['earth_magnetic_field_x_muT'],
+                location_steering_card['earth_magnetic_field_x_muT'],
             earth_magnetic_field_z_muT=
-                location_steering_card_path['earth_magnetic_field_z_muT'])
+                location_steering_card['earth_magnetic_field_z_muT'])
         job['acp_detector_path'] = acp_detector_path
         job['intermediate_path'] = join(
             op, imr, '{:d}.json.gz'.format(run+1))
