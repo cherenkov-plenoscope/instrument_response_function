@@ -21,6 +21,8 @@ def atmosphere_model_to_corsika(model):
         return 26
     elif model == 'canaries-lapalma-winter':
         return 8
+    elif model == 'namibia-gamsberg':
+        return 10
     raise ValueError(
         "The atmosphere_model '{:s}' is not supported".format(model))
 
