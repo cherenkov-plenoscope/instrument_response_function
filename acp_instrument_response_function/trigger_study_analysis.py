@@ -181,7 +181,7 @@ def run_analysis(path, patch_threshold=67):
         trigger_mask=events['trigger_mask'])
 
     steering_card = irfutils.read_json(
-        os.path.join(path, 'input', 'steering.json'))
+        os.path.join(path, 'input', 'particle_steering_card.json'))
     acp_geometry = irfutils.read_acp_design_geometry(
         os.path.join(
             path, 'input', 'acp_detector', 'input', 'scenery', 'scenery.json'))
