@@ -18,6 +18,8 @@ def read_intermediate_results(path):
 
 
 def flatten(events):
+    event_ids = []
+    run_ids = []
     num_true_cherenkov_photons = []
     num_exposure_time_slices = []
     time_slice_durations = []
@@ -29,6 +31,8 @@ def flatten(events):
     zenith_distances = []
     first_interaction_height = []
     for e in events:
+        event_ids.append(e['id']['event'])
+        run_ids.append(e['id']['run'])
         num_exposure_time_slices.append(
             e['refocus_sum_trigger'][0]['exposure_time_in_slices'])
         time_slice_durations.append(
@@ -51,6 +55,8 @@ def flatten(events):
         first_interaction_height.append(
             e['simulation_truth']['first_interaction_height'])
     return {
+        'run_ids': np.array(run_ids),
+        'event_ids': np.array(event_ids),
         'trigger_responses': np.array(trigger_responses),
         'num_true_cherenkov_photons': np.array(num_true_cherenkov_photons),
         'num_exposure_time_slices': np.array(num_exposure_time_slices),
