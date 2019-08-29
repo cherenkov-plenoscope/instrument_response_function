@@ -18,29 +18,53 @@ def read_intermediate_results(path):
 
 
 def flatten(events):
+    # id
+    #---------------
     event_ids = []
     run_ids = []
+    # trigger
+    #---------------
     num_true_cherenkov_photons = []
     num_exposure_time_slices = []
     time_slice_durations = []
-    num_trigger_integration_time_slices = []
     trigger_responses = []
+    # particle
+    #---------------
     energies = []
     max_scatter_radii = []
     scatter_radii = []
     zenith_distances = []
     first_interaction_height = []
+    # particle truth
+    #---------------
+    true_particle_id=[]
+    true_particle_energy=[]
+    true_particle_zenith=[]
+    true_particle_azimuth=[]
+    true_particle_core_x=[]
+    true_particle_core_y=[]
+    true_particle_max_core_scatter_radius=[]
+    true_particle_first_interaction_height=[]
+
     for e in events:
+        # id
+        #---------------
         event_ids.append(e['id']['event'])
         run_ids.append(e['id']['run'])
+        # trigger
+        #---------------
+        num_true_cherenkov_photons.append(e['num_air_shower_pulses'])
         num_exposure_time_slices.append(
             e['refocus_sum_trigger'][0]['exposure_time_in_slices'])
         time_slice_durations.append(
             e['acp']['light_field_sensor']['time_slice_duration'])
-        num_trigger_integration_time_slices.append(
-            e['refocus_sum_trigger'][0]['integration_time_in_slices'])
+        t0 = e['refocus_sum_trigger'][0]['patch_threshold']
+        t1 = e['refocus_sum_trigger'][1]['patch_threshold']
+        t2 = e['refocus_sum_trigger'][2]['patch_threshold']
+        trigger_responses.append(np.array([t0, t1, t2]))
+        # particle
+        #---------------
         energies.append(e['simulation_truth']['energy'])
-        num_true_cherenkov_photons.append(e['num_air_shower_pulses'])
         max_scatter_radii.append(e['simulation_truth']['scatter_radius'])
         scatter_radii.append(
             np.hypot(
@@ -48,24 +72,48 @@ def flatten(events):
                 e['simulation_truth']['core_position']['y']))
         zenith_distances.append(
             e['simulation_truth']['zenith'])
-        t0 = e['refocus_sum_trigger'][0]['patch_threshold']
-        t1 = e['refocus_sum_trigger'][1]['patch_threshold']
-        t2 = e['refocus_sum_trigger'][2]['patch_threshold']
-        trigger_responses.append(np.array([t0, t1, t2]))
         first_interaction_height.append(
             e['simulation_truth']['first_interaction_height'])
+        # particle truth
+        #---------------
+        true_particle_id.append(
+            e["simulation_truth"]["primary_particle"]["id"])
+        true_particle_energy.append(e["simulation_truth"]["energy"])
+        true_particle_zenith.append(e["simulation_truth"]["zenith"])
+        true_particle_azimuth.append(e["simulation_truth"]["azimuth"])
+        true_particle_core_x.append(e["simulation_truth"]["core_position"]["x"])
+        true_particle_core_y.append(e["simulation_truth"]["core_position"]["y"])
+        true_particle_first_interaction_height.append(
+            e["simulation_truth"]["first_interaction_height"])
+        true_particle_max_core_scatter_radius.append(
+            e["simulation_truth"]["scatter_radius"])
+
     return {
+        # id
         'run_ids': np.array(run_ids),
         'event_ids': np.array(event_ids),
+        # trigger
         'trigger_responses': np.array(trigger_responses),
         'num_true_cherenkov_photons': np.array(num_true_cherenkov_photons),
         'num_exposure_time_slices': np.array(num_exposure_time_slices),
         'time_slice_durations': np.array(time_slice_durations),
+        # particle
         'energies': np.array(energies),
         'max_scatter_radii': np.array(max_scatter_radii),
         'scatter_radii': np.array(scatter_radii),
         'zenith_distances': np.array(zenith_distances),
         'first_interaction_height': np.array(first_interaction_height),
+        # particle truth
+        "true_particle_id": np.array([true_particle_id]),
+        "true_particle_energy": np.array([true_particle_energy]),
+        "true_particle_zenith": np.array([true_particle_zenith]),
+        "true_particle_azimuth": np.array([true_particle_azimuth]),
+        "true_particle_core_x": np.array([true_particle_core_x]),
+        "true_particle_core_y": np.array([true_particle_core_y]),
+        "true_particle_max_core_scatter_radius": np.array([
+            true_particle_max_core_scatter_radius]),
+        "true_particle_first_interaction_height": np.array([
+            true_particle_first_interaction_height]),
     }
 
 
