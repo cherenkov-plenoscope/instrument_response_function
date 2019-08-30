@@ -3,6 +3,7 @@ import os
 import glob
 from .json_in_out import write_json_dictionary
 from .json_in_out import read_json_dictionary
+import json
 
 
 def list_run_paths_in(path):
@@ -144,3 +145,37 @@ def flatten_run_dict(run_dict):
         'azimuth': np.array(azimuth, dtype=np.float32),
         'scatter_radius': np.array(scatter_radius, dtype=np.float32),
     }
+
+def reduce(intermediate_runs_dir, out_path):
+    intermediate_run_paths = list_run_paths_in(intermediate_runs_dir)
+    with open(out_path, "wt") as fout:
+        for run_path in intermediate_run_paths:
+            intermediate_run = read_json_dictionary(run_path)
+            out = {}
+            for evt in intermediate_run:
+                # id
+                out["run"] = evt["id"]["run"]
+                out["event"] = evt["id"]["event"]
+                out["true_particle_id"] = int(
+                    evt["simulation_truth"]["primary_particle"]["id"])
+                # trigger
+                out["trigger_patch_threshold_0"] = \
+                    evt["refocus_sum_trigger"][0]["patch_threshold"]
+                out["trigger_patch_threshold_1"] = \
+                    evt["refocus_sum_trigger"][1]["patch_threshold"]
+                out["trigger_patch_threshold_2"] = \
+                    evt["refocus_sum_trigger"][2]["patch_threshold"]
+                # particle truth
+                # out["true_particle_id"]
+                st = evt["simulation_truth"]
+                out["true_particle_energy"] = st["energy"]
+                out["true_particle_zenith"] = st["zenith"]
+                out["true_particle_azimuth"] = st["azimuth"]
+                out["true_particle_core_x"] = st["core_position"]["x"]
+                out["true_particle_core_y"] = st["core_position"]["y"]
+                out["true_particle_max_core_scatter_radius"] = \
+                    st["scatter_radius"]
+                out["true_particle_first_interaction_height"] = \
+                    st["first_interaction_height"]
+                fout.write(json.dumps(out))
+                fout.write("\n")
