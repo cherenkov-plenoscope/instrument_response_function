@@ -37,14 +37,14 @@ def flatten(events):
     first_interaction_height = []
     # particle truth
     #---------------
-    true_particle_id=[]
-    true_particle_energy=[]
-    true_particle_zenith=[]
-    true_particle_azimuth=[]
-    true_particle_core_x=[]
-    true_particle_core_y=[]
-    true_particle_max_core_scatter_radius=[]
-    true_particle_first_interaction_height=[]
+    true_particle_id = []
+    true_particle_energy = []
+    true_particle_zenith = []
+    true_particle_azimuth = []
+    true_particle_core_x = []
+    true_particle_core_y = []
+    true_particle_max_core_scatter_radius = []
+    true_particle_first_interaction_height = []
 
     for e in events:
         # id
@@ -104,16 +104,16 @@ def flatten(events):
         'zenith_distances': np.array(zenith_distances),
         'first_interaction_height': np.array(first_interaction_height),
         # particle truth
-        "true_particle_id": np.array([true_particle_id]),
-        "true_particle_energy": np.array([true_particle_energy]),
-        "true_particle_zenith": np.array([true_particle_zenith]),
-        "true_particle_azimuth": np.array([true_particle_azimuth]),
-        "true_particle_core_x": np.array([true_particle_core_x]),
-        "true_particle_core_y": np.array([true_particle_core_y]),
-        "true_particle_max_core_scatter_radius": np.array([
-            true_particle_max_core_scatter_radius]),
-        "true_particle_first_interaction_height": np.array([
-            true_particle_first_interaction_height]),
+        "true_particle_id": np.array(true_particle_id),
+        "true_particle_energy": np.array(true_particle_energy),
+        "true_particle_zenith": np.array(true_particle_zenith),
+        "true_particle_azimuth": np.array(true_particle_azimuth),
+        "true_particle_core_x": np.array(true_particle_core_x),
+        "true_particle_core_y": np.array(true_particle_core_y),
+        "true_particle_max_core_scatter_radius": np.array(
+            true_particle_max_core_scatter_radius),
+        "true_particle_first_interaction_height": np.array(
+            true_particle_first_interaction_height),
     }
 
 
