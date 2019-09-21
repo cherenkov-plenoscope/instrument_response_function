@@ -1,4 +1,3 @@
-from . import intermediate
 from . import simulation
 from . import gamma_limits_bridge
 from . import utils
