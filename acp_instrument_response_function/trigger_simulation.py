@@ -1,6 +1,7 @@
 import numpy as np
 import os
-from os.path import join
+import json
+from os import path as op
 import shutil as sh
 import tempfile
 import corsika_wrapper as cw
@@ -8,81 +9,71 @@ import plenopy as pl
 from . import utils as irfutils
 
 
-def trigger_study(
-    acp_response_path,
-    output_path,
-    past_trigger_path,
-    run_number,
-    patch_treshold=67,
-    integration_time_in_slices=5
-):
-    run = pl.Run(acp_response_path)
-    min_number_neighbors = 3
+def __make_corsika_steering_card_str(run):
+    c = ''
+    c += 'RUNNR {:d}\n'.format(run["run_id"])
+    c += 'EVTNR 1\n'
+    c += 'NSHOW {:d}\n'.format(run["num_events"])
+    c += 'PRMPAR {:d}\n'.format(run["particle_id"])
+    c += 'ESLOPE {:3.3e}\n'.format(-1.)
+    c += 'ERANGE {:3.3e} {:3.3e}\n'.format(
+        run["energy_start"],
+        run["energy_stop"])
+    c += 'THETAP {:3.3e} {:3.3e}\n'.format(
+        run["cone_zenith_deg"],
+        run["cone_zenith_deg"])
+    c += 'PHIP {:3.3e} {:3.3e}\n'.format(
+        run["cone_azimuth_deg"], run["cone_azimuth_deg"])
+    c += 'VIEWCONE .0 {:3.3e}\n'.format(run["cone_max_scatter_angle_deg"])
+    c += 'SEED {:d} 0 0\n'.format(run["run_id"] + 0)
+    c += 'SEED {:d} 0 0\n'.format(run["run_id"] + 1)
+    c += 'SEED {:d} 0 0\n'.format(run["run_id"] + 2)
+    c += 'SEED {:d} 0 0\n'.format(run["run_id"] + 3)
+    c += 'OBSLEV {:3.3e}\n'.format(1e2*run["observation_level_altitude_asl"])
+    c += 'FIXCHI .0\n'
+    c += 'MAGNET {Bx:3.3e} {Bz:3.3e}\n'.format(
+            Bx=run["earth_magnetic_field_x_muT"],
+            Bz=run["earth_magnetic_field_z_muT"])
+    c += 'ELMFLG T T\n'
+    c += 'MAXPRT 1\n'
+    c += 'PAROUT F F\n'
+    c += 'TELESCOPE {x:3.3e} {y:3.3e} .0 {r:3.3e}\n'.format(
+            x=1e2*run["instrument_x"],
+            y=1e2*run["instrument_y"],
+            r=1e2*run["instrument_radius"])
+    c += 'ATMOSPHERE {:d} T\n'.format(run["atmosphere_id"])
+    c += 'CWAVLG 250 700\n'
+    c += 'CSCAT 1 {:3.3e} .0\n'.format(run["core_max_scatter_radius"])
+    c += 'CERQEF F T F\n'
+    c += 'CERSIZ 1.\n'
+    c += 'CERFIL F\n'
+    c += 'TSTART T\n'
+    c += 'EXIT\n'
+    return c
 
-    trigger_preparation = pl.trigger.prepare_refocus_sum_trigger(
-        run.light_field_geometry,
-        object_distances=[10e3, 15e3, 20e3])
-
-    event_infos = []
-    for event in run:
-        info = pl.trigger_study.export_trigger_information(event)
-        info['num_air_shower_pulses'] = int(
-            event.simulation_truth.detector.number_air_shower_pulses())
-        info['refocus_sum_trigger'] = pl.trigger.apply_refocus_sum_trigger(
-            event=event,
-            trigger_preparation=trigger_preparation,
-            min_number_neighbors=min_number_neighbors,
-            integration_time_in_slices=integration_time_in_slices)
-        event_infos.append(info)
-
-        max_patch_threshold = np.max(
-            [p['patch_threshold'] for p in info['refocus_sum_trigger']])
-
-        if max_patch_threshold >= patch_treshold:
-            event_filename = '{run:d}{event:06d}'.format(
-                run=run_number,
-                event=event.number)
-            event_path = join(past_trigger_path, event_filename)
-            sh.copytree(event._path, event_path)
-            pl.tools.acp_format.compress_event_in_place(event_path)
-            pl.trigger_study.write_dict_to_file(
-                pl.trigger_study.un_numpyify(info['refocus_sum_trigger']),
-                join(event_path, 'refocus_sum_trigger.json'))
-
-    pl.trigger_study.write_dict_to_file(
-        pl.trigger_study.un_numpyify(event_infos),
-        output_path)
 
 def __summarize_response(
-    corsika_steering_card,
+    run_config,
     corsika_run_header,
-    corsika_event_header
+    corsika_event_header,
+    trigger_responses,
+    detector_truth,
 ):
-    cosc = corsika_steering_card
     evth = corsika_event_header
     runh = corsika_run_header
 
     num_obs_levels = evth[47-1]
-    assert num_obs_levels == 1 ("There must be only 1 observation level.")
+    assert num_obs_levels == 1, ("There must be only 1 observation level.")
 
     num_reuses = evth[98-1]
-    assert num_reuses == 1 ("Events must not be reused.")
+    assert num_reuses == 1, ("Events must not be reused.")
 
-    assert runh[249-1] == 0. (
+    assert runh[249-1] == 0., (
         "Expected core-y-scatter = 0 for CORSIKA to throw core in a disc.")
 
-    max_scatter_angle = float(
-        np.deg2rad(
-            float(
-                cosc['VIEWCONE'][0])))
-    scatter_cone_azimuth = float(
-        np.deg2rad(
-            float(
-                sc["PHIP"][0].split()[0])))
-    scatter_cone_zenith = float(
-        np.deg2rad(
-            float(
-                sc["THETAP"][0].split()[0])))
+    cone_max_scatter_angle = np.deg2rad(run_config["cone_max_scatter_angle_deg"])
+    cone_azimuth = np.deg2rad(run_config["cone_azimuth_deg"])
+    cone_zenith = np.deg2rad(run_config["cone_zenith_deg"])
 
     truth = {
         "run_id": int(runh[2-1]),
@@ -103,48 +94,44 @@ def __summarize_response(
 
         "true_particle_first_interaction_z": float(evth[7-1]*1e-2),
 
-        "max_scatter_radius": float(runh[248-1]*1e-2),
-        "max_scatter_angle": max_scatter_angle,
+        "core_max_scatter_radius": float(runh[248-1]*1e-2),
+        "cone_max_scatter_angle": float(cone_max_scatter_angle),
 
-        "cone_azimuth": scatter_cone_azimuth,
-        "cone_zenith": scatter_cone_zenith,
+        "cone_azimuth": float(cone_azimuth),
+        "cone_zenith": float(cone_zenith),
 
         "starting_grammage": float(evth[5-1]),
         "mag_north_vs_x": float(evth[93-1]),
         "obs_level_asl": float(evth[48-1]*1e-2),
 
-        "true_pe_cherenkov": int(
-            event.simulation_truth.detector.number_air_shower_pulses()),
+        "true_pe_cherenkov": int(detector_truth.number_air_shower_pulses()),
     }
 
-    truth["trigger_response"] = np.max(
-        [layer['patch_threshold'] for layer in trigger_responses])
+    truth["trigger_response"] = int(np.max(
+        [layer['patch_threshold'] for layer in trigger_responses]))
 
     for o in range(len(trigger_responses)):
         truth["trigger_{:d}_object_distance".format(o)] = float(
             trigger_responses[o]['object_distance'])
-        truth["trigger_{:d}_respnse".format(o)] = float(
+        truth["trigger_{:d}_respnse".format(o)] = int(
             trigger_responses[o]['patch_threshold'])
 
     return truth
 
 
-
 def evaluate_trigger_and_export_response(
-    job,
-    acp_response_path,
+    run_config,
+    merlict_run_path,
     trigger_treshold=67,
     integration_time_in_slices=5,
     min_number_neighbors=3,
     object_distances=[10e3, 15e3, 20e3],
 ):
-    run = pl.Run(acp_response_path)
-
+    run = pl.Run(merlict_run_path)
     trigger_preparation = pl.trigger.prepare_refocus_sum_trigger(
         light_field_geometry=run.light_field_geometry,
         object_distances=object_distances)
 
-    thrown = []
     for event in run:
         trigger_responses = pl.trigger.apply_refocus_sum_trigger(
             event=event,
@@ -153,161 +140,233 @@ def evaluate_trigger_and_export_response(
             integration_time_in_slices=integration_time_in_slices)
 
         event_summary = __summarize_response(
-            corsika_steering_card=job['corsika_steering_card'],
+            run_config=run_config,
             corsika_run_header=event.simulation_truth.event.corsika_run_header.raw,
             corsika_event_header=event.simulation_truth.event.corsika_event_header.raw,
-            trigger_responses=trigger_responses)
+            trigger_responses=trigger_responses,
+            detector_truth=event.simulation_truth.detector)
 
-        if summary["trigger_response"] >= trigger_treshold:
-            event_filename = '{run:d}{event:06d}'.format(
-                run=summary["run"],
-                event=summary["event"])
-            event_path = join(job["past_trigger_path"], event_filename)
+        with open(run_config['thrown_path'], 'at') as fout:
+            fout.write(json.dumps(event_summary)+"\n")
+
+        if event_summary["trigger_response"] >= trigger_treshold:
+            event_filename = '{run_id:06d}{event_id:06d}'.format(
+                run_id=event_summary["run_id"],
+                event_id=event_summary["event_id"])
+            event_path = op.join(
+                run_config["past_trigger_dir"],
+                event_filename)
             sh.copytree(event._path, event_path)
             pl.tools.acp_format.compress_event_in_place(event_path)
 
 
+def run_corsika_run(run):
+    with tempfile.TemporaryDirectory(prefix='plenoscope_irf_') as tmp:
+        # tmp = "/home/sebastian/Desktop/__run{:06d}".format(run["run_id"])
+        # os.makedirs(tmp)
+        corsika_card_path = op.join(tmp, 'corsika_card.txt')
+        corsika_run_path = op.join(tmp, 'cherenkov_photons.evtio')
+        merlict_run_path = op.join(tmp, 'plenoscope_response.acp')
 
-def run_job(job):
-    with tempfile.TemporaryDirectory(prefix='acp_trigger_') as tmp:
-        corsika_run_path = join(tmp, 'airshower.evtio')
-        acp_response_path = join(tmp, 'acp_response.acp')
+        with open(corsika_card_path, "wt") as fout:
+            card_str = __make_corsika_steering_card_str(run=run)
+            fout.write(card_str)
 
         cor_rc = cw.corsika(
-            steering_card=job['corsika_steering_card'],
+            steering_card=cw.read_steering_card(corsika_card_path),
             output_path=corsika_run_path,
             save_stdout=True)
 
-        sh.copy(corsika_run_path+'.stdout', job['corsika_stdout_path'])
-        sh.copy(corsika_run_path+'.stderr', job['corsika_stderr_path'])
+        sh.copy(corsika_run_path+'.stdout', run['corsika_stdout_path'])
+        sh.copy(corsika_run_path+'.stderr', run['corsika_stderr_path'])
 
         mct_rc = irfutils.merlict_plenoscope_propagator(
             corsika_run_path=corsika_run_path,
-            output_path=acp_response_path,
-            acp_detector_path=job['acp_detector_path'],
-            mct_acp_propagator_path=job['mct_acp_propagator_path'],
-            mct_acp_config_path=job['mct_acp_config_path'],
-            random_seed=job['run_number'],
+            output_path=merlict_run_path,
+            light_field_geometry_path=run['light_field_geometry_path'],
+            merlict_plenoscope_propagator_path=\
+                run['merlict_plenoscope_propagator_path'],
+            merlict_plenoscope_propagator_config_path=\
+                run['merlict_plenoscope_propagator_config_path'],
+            random_seed=run['run_id'],
             photon_origins=True)
 
-        sh.copy(acp_response_path+'.stdout', job['mct_stdout_path'])
-        sh.copy(acp_response_path+'.stderr', job['mct_stderr_path'])
+        sh.copy(merlict_run_path+'.stdout', run['merlict_stdout_path'])
+        sh.copy(merlict_run_path+'.stderr', run['merlict_stderr_path'])
 
         evaluate_trigger_and_export_response(
-            job=job,
-            acp_response_path=acp_response_path)
-    return {
-        'corsika_return_code': cor_rc,
-        'mctracer_return_code': mct_rc}
+            run_config=run,
+            merlict_run_path=merlict_run_path)
+
+
+def run_job(job):
+    for run in job["runs"]:
+        run_corsika_run(run=run)
+    return 0
 
 
 def make_output_directory_and_jobs(
-    output_dir,
-    particle_steering_card_path,
-    location_steering_card_path,
-    light_field_geometry_path,
-    merlict_plenoscope_propagator_path,
-    merlict_plenoscope_propagator_config_path,
-    corsika_path,
+    output_dir="__example_irf",
+    num_energy_bins=31,
+    num_events_in_energy_bin=50,
+    max_num_events_in_run=10,
+    particle_config_path=op.join(
+        "resources",
+        "acp",
+        "71m",
+        "gamma_calib.json"),
+    location_config_path=op.join(
+        "resources",
+        "acp",
+        "71m",
+        "chile_paranal.json"),
+    light_field_geometry_path=op.join(
+        "run20190724_10",
+        "light_field_calibration"),
+    merlict_plenoscope_propagator_path=op.join(
+        "build",
+        "merlict",
+        "merlict-plenoscope-propagation"),
+    merlict_plenoscope_propagator_config_path=op.join(
+        "resources",
+        "acp",
+        "merlict_propagation_config.json"),
+    corsika_path=op.join(
+        "build",
+        "corsika",
+        "corsika-75600",
+        "run",
+        "corsika75600Linux_QGSII_urqmd"),
     trigger_patch_threshold=67,
     trigger_integration_time_in_slices=5
 ):
     od = output_dir
 
     # Make directory tree
+    #--------------------
     os.makedirs(od)
-    os.makedirs(join(od, 'input'))
-    os.makedirs(join(od, 'thrown'))
-    os.makedirs(join(od, 'stdout'))
-    os.makedirs(join(od, 'past_trigger'))
+    os.makedirs(op.join(od, 'input'))
+    os.makedirs(op.join(od, 'thrown'))
+    os.makedirs(op.join(od, 'stdout'))
+    os.makedirs(op.join(od, 'past_trigger'))
 
     # Copy input
+    #-----------
     sh.copy(
-        particle_steering_card_path,
-        join(od, 'input', 'particle_steering_card.json'))
+        particle_config_path,
+        op.join(od, 'input', 'particle_config.json'))
     sh.copy(
-        location_steering_card_path,
-        join(od, 'input', 'location_steering_card.json'))
+        location_config_path,
+        op.join(od, 'input', 'location_config.json'))
     sh.copy(
         merlict_plenoscope_propagator_config_path,
-        join(od, 'input', 'merlict_plenoscope_propagator_config.json'))
-    merlict_plenoscope_propagator_config_path = join(
+        op.join(od, 'input', 'merlict_plenoscope_propagator_config.json'))
+    merlict_plenoscope_propagator_config_path = op.join(
         od, 'input', 'merlict_plenoscope_propagator_config.json')
     sh.copytree(
         light_field_geometry_path,
-        join(od, 'input', 'light_field_geometry'))
-    light_field_geometry_path = join(od, 'input', 'light_field_geometry')
+        op.join(od, 'input', 'light_field_geometry'))
+    light_field_geometry_path = op.join(od, 'input', 'light_field_geometry')
 
     # Read input
-    particle_steering_card = irfutils.read_json(
-        join(od, 'input', 'particle_steering_card.json'))
-    location_steering_card = irfutils.read_json(
-        join(od, 'input', 'location_steering_card.json'))
+    #-----------
+    particle_config = irfutils.read_json(
+        op.join(od, 'input', 'particle_config.json'))
+    location_config = irfutils.read_json(
+        op.join(od, 'input', 'location_config.json'))
     plenoscope_geometry = irfutils.read_acp_design_geometry(
-        join(
-            od,
-            'input',
-            'light_field_geometry',
+        op.join(od, 'input', 'light_field_geometry',
             'input',
             'scenery',
             'scenery.json'))
 
     # Prepare simulation
-    max_scatter_radius_in_bin, energy_bin_edges = (
-        irfutils.energy_bins_and_max_scatter_radius(
-            energy=particle_steering_card['energy'],
-            max_scatter_radius=particle_steering_card['max_scatter_radius'],
-            number_runs=particle_steering_card['number_runs']))
+    # ------------------
+    (
+        max_scatter_radius_in_energy_bin,
+        energy_bin_edges
+    ) = irfutils.energy_bins_and_max_scatter_radius(
+        energy=particle_config['energy'],
+        max_scatter_radius=particle_config['max_scatter_radius'],
+        num_energy_bins=num_energy_bins)
 
     irfutils.export_max_scatter_radius_vs_energy(
         energy_bin_edges=energy_bin_edges,
-        max_scatter_radius_in_bin=max_scatter_radius_in_bin,
-        directory=join(op, 'input'))
+        max_scatter_radius_in_energy_bin=max_scatter_radius_in_energy_bin,
+        directory=op.join(od, 'input'))
 
-    jobs = []
-    for run in range(particle_steering_card['number_runs']):
-        job = {}
-        job['run_number'] = run+1
-        job['corsika_steering_card'] = irfutils.make_corsika_steering_card(
-            random_seed=particle_steering_card['random_seed'],
-            run_number=job['run_number'],
-            number_events_in_run=particle_steering_card['number_events_in_run'],
-            primary_particle=irfutils.primary_particle_to_corsika(
-                particle_steering_card['primary_particle']),
-            E_start=energy_bin_edges[run],
-            E_stop=energy_bin_edges[run + 1],
-            max_zenith_scatter_angle_deg=irfutils.max_zenith_scatter_angle_deg(
-                particle_steering_card['source_geometry'],
-                acp_geometry['max_FoV_diameter_deg']),
-            max_scatter_radius=max_scatter_radius_in_bin[run],
-            observation_level_altitude_asl=location_steering_card[
-                'observation_level_altitude_asl'],
-            instrument_radius=acp_geometry[
-                'expected_imaging_system_aperture_radius']*1.1,
-            atmosphere_model=irfutils.atmosphere_model_to_corsika(
-                location_steering_card['atmosphere_model']),
-            earth_magnetic_field_x_muT=
-                location_steering_card['earth_magnetic_field_x_muT'],
-            earth_magnetic_field_z_muT=
-                location_steering_card['earth_magnetic_field_z_muT'])
-        job['acp_detector_path'] = acp_detector_path
-        job['intermediate_path'] = join(
-            op, imr, '{:d}.json.gz'.format(run+1))
-        job['past_trigger_dir'] = join(op, 'past_trigger')
-        job['mct_acp_config_path'] = mct_acp_config_path
-        job['mct_acp_propagator_path'] = mct_acp_propagator_path
-        job['mct_stdout_path'] = join(
-            op, 'stdout',
-            '{:d}_mctPlenoscopePropagation.stdout'.format(run+1))
-        job['mct_stderr_path'] = join(
-            op, 'stdout',
-            '{:d}_mctPlenoscopePropagation.stderr'.format(run+1))
-        job['corsika_stdout_path'] = join(
-            op, 'stdout', '{:d}_corsika.stdout'.format(run+1))
-        job['corsika_stderr_path'] = join(
-            op, 'stdout', '{:d}_corsika.stderr'.format(run+1))
-        job['trigger_patch_threshold'] = trigger_patch_threshold
-        job['trigger_integration_time_in_slices'] = (
-            trigger_integration_time_in_slices)
-        jobs.append(job)
+    # Make jobs
+    #----------
+    jobs = irfutils.make_jobs_with_balanced_runtime(
+        energy_bin_edges=energy_bin_edges,
+        num_events_in_energy_bin=num_events_in_energy_bin,
+        max_num_events_in_run=max_num_events_in_run,
+        max_cumsum_energy_in_run_in_units_of_highest_event_energy=10)
+
+    for j in range(len(jobs)):
+        for r in range(len(jobs[j]["runs"])):
+            # already set
+            # -----------
+            # run_id
+            # energy_bin
+            # num_events
+
+            run = jobs[j]["runs"][r]
+            run_id = run["run_id"]
+            energy_bin = run["energy_bin"]
+            run['observation_level_altitude_asl'] = location_config[
+                'observation_level_altitude_asl']
+            run['earth_magnetic_field_x_muT'] = location_config[
+                'earth_magnetic_field_x_muT']
+            run['earth_magnetic_field_z_muT'] = location_config[
+                'earth_magnetic_field_z_muT']
+            run['atmosphere_id'] = irfutils.atmosphere_model_to_corsika(
+                location_config["atmosphere"])
+            run['energy_start'] = energy_bin_edges[energy_bin]
+            run['energy_stop'] = energy_bin_edges[energy_bin + 1]
+            run['particle_id'] = irfutils.primary_particle_to_corsika(
+                particle_config['primary_particle'])
+            run['cone_azimuth_deg'] = 0.
+            run['cone_zenith_deg'] = 0.
+            run['cone_max_scatter_angle_deg'] = particle_config[
+                'max_scatter_angle_deg']
+            run['instrument_x'] = 0.
+            run['instrument_y'] = 0.
+            run['instrument_radius'] = plenoscope_geometry[
+                    'expected_imaging_system_aperture_radius']*1.1
+            run['core_max_scatter_radius'] = max_scatter_radius_in_energy_bin[
+                energy_bin]
+            run['light_field_geometry_path'] = light_field_geometry_path
+            run['thrown_path'] = op.join(
+                od,
+                'thrown',
+                '{:06d}.jsonl'.format(run_id))
+            run['past_trigger_dir'] = op.join(
+                od,
+                'past_trigger')
+            run['merlict_plenoscope_propagator_config_path'] = \
+                merlict_plenoscope_propagator_config_path
+            run['merlict_plenoscope_propagator_path'] = \
+                merlict_plenoscope_propagator_path
+            run['corsika_path'] = corsika_path
+            run['merlict_stdout_path'] = op.join(
+                od,
+                'stdout',
+                '{:06d}_merlict.stdout'.format(run_id))
+            run['merlict_stderr_path'] = op.join(
+                od,
+                'stdout',
+                '{:06d}_merlict.stderr'.format(run_id))
+            run['corsika_stdout_path'] = op.join(
+                od,
+                'stdout',
+                '{:06d}_corsika.stdout'.format(run_id))
+            run['corsika_stderr_path'] = op.join(
+                od,
+                'stdout',
+                '{:06d}_corsika.stderr'.format(run_id))
+            run['trigger_patch_threshold'] = trigger_patch_threshold
+            run['trigger_integration_time_in_slices'] = \
+                trigger_integration_time_in_slices
+            jobs[j]["runs"][r] = run
     return jobs

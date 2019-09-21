@@ -27,15 +27,6 @@ def atmosphere_model_to_corsika(model):
         "The atmosphere_model '{:s}' is not supported".format(model))
 
 
-def max_zenith_scatter_angle_deg(source_geometry, acp_fov):
-    if source_geometry == 'point':
-        return 0.0
-    elif source_geometry == 'diffuse':
-        return acp_fov
-    raise ValueError(
-        "The source_geometry '{:s}' is not supported".format(source_geometry))
-
-
 def read_json(path):
     with open(path, 'rt') as fin:
         return json.loads(fin.read())
@@ -51,12 +42,12 @@ def interpolate_with_power10(x, xp, fp):
 
 def export_max_scatter_radius_vs_energy(
     energy_bin_edges,
-    max_scatter_radius_in_bin,
+    max_scatter_radius_in_energy_bin,
     directory
 ):
     np.savetxt(
         os.path.join(directory, 'max_scatter_radius_vs_energy.csv'),
-        np.c_[energy_bin_edges[1:], max_scatter_radius_in_bin],
+        np.c_[energy_bin_edges[1:], max_scatter_radius_in_energy_bin],
         delimiter=', ',
         header='upper bin-edge energy/Gev, max_scatter_radius/m')
 
@@ -125,15 +116,14 @@ def read_acp_design_geometry(scenery_path):
 def energy_bins_and_max_scatter_radius(
     energy,
     max_scatter_radius,
-    number_runs,
+    num_energy_bins,
 ):
     assert (energy == np.sort(energy)).all(), (
         "Expected the energies to be sorted")
-
     energy_bin_edges = np.logspace(
         np.log10(np.min(energy)),
         np.log10(np.max(energy)),
-        number_runs + 1)
+        num_energy_bins + 1)
     max_scatter_radius_in_bin = interpolate_with_power10(
         x=energy_bin_edges[1:],
         xp=energy,
@@ -144,9 +134,9 @@ def energy_bins_and_max_scatter_radius(
 def merlict_plenoscope_propagator(
     corsika_run_path,
     output_path,
-    acp_detector_path,
-    mct_acp_propagator_path,
-    mct_acp_config_path,
+    light_field_geometry_path,
+    merlict_plenoscope_propagator_path,
+    merlict_plenoscope_propagator_config_path,
     random_seed,
     photon_origins=True
 ):
@@ -157,9 +147,9 @@ def merlict_plenoscope_propagator(
     op = output_path
     with open(op+'.stdout', 'w') as out, open(op+'.stderr', 'w') as err:
         call = [
-            mct_acp_propagator_path,
-            '-l', acp_detector_path,
-            '-c', mct_acp_config_path,
+            merlict_plenoscope_propagator_path,
+            '-l', light_field_geometry_path,
+            '-c', merlict_plenoscope_propagator_config_path,
             '-i', corsika_run_path,
             '-o', output_path,
             '-r', '{:d}'.format(random_seed)]
@@ -172,3 +162,63 @@ def merlict_plenoscope_propagator(
 def scatter_solid_angle(max_scatter_zenith_distance):
     cap_hight = (1.0 - np.cos(max_scatter_zenith_distance))
     return 2.0*np.pi*cap_hight
+
+
+def make_jobs_with_balanced_runtime(
+    energy_bin_edges=np.geomspace(0.25, 1000, 1001),
+    num_events_in_energy_bin=512,
+    max_num_events_in_run=128,
+    max_cumsum_energy_in_run_in_units_of_highest_event_energy=10,
+):
+    """
+    Make a list of jobs with similar work-load, based on the particle's energy.
+    """
+    num_energy_bins = energy_bin_edges.shape[0] - 1
+    mean_energy_in_energy_bins = energy_bin_edges[1:]
+
+    highest_event_enrgy = np.max(mean_energy_in_energy_bins)
+    max_cumsum_energy_in_run = highest_event_enrgy*\
+        max_cumsum_energy_in_run_in_units_of_highest_event_energy
+
+    num_events_left_in_energy_bin = num_events_in_energy_bin*np.ones(
+        num_energy_bins,
+        dtype=np.int)
+
+    runs = []
+    run_id = 0
+    for energy_bin in range(num_energy_bins):
+        while num_events_left_in_energy_bin[energy_bin] > 0:
+            run_id += 1
+            num_events_in_run = int(
+                max_cumsum_energy_in_run//
+                mean_energy_in_energy_bins[energy_bin])
+
+            if num_events_in_run > max_num_events_in_run:
+                num_events_in_run = max_num_events_in_run
+            run = {}
+            run["run_id"] = run_id
+            run["energy_bin"] = energy_bin
+            run["mean_energy"] = mean_energy_in_energy_bins[energy_bin]
+            run["num_events"] = num_events_in_run
+            run["cumsum_energy"] = run["num_events"]*run["mean_energy"]
+            num_events_left_in_energy_bin[energy_bin] -= num_events_in_run
+            runs.append(run)
+    jobs = []
+    job_id = 0
+    run_id = 0
+    while run_id < len(runs):
+        job_id += 1
+        job = {}
+        job["job_id"] = job_id
+        job["cumsum_energy"] = 0
+        job["runs"] = []
+        while (
+            run_id < len(runs) and
+            job["cumsum_energy"] + runs[run_id]["cumsum_energy"] <=
+                max_cumsum_energy_in_run
+        ):
+            job["runs"].append(runs[run_id])
+            job["cumsum_energy"] += runs[run_id]["cumsum_energy"]
+            run_id += 1
+        jobs.append(job)
+    return jobs
