@@ -141,7 +141,7 @@ def energy_bins_and_max_scatter_radius(
     return max_scatter_radius_in_bin, energy_bin_edges
 
 
-def run_acp(
+def merlict_plenoscope_propagator(
     corsika_run_path,
     output_path,
     acp_detector_path,

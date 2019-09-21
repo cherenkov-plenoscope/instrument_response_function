@@ -181,7 +181,7 @@ def run_job(job):
         sh.copy(corsika_run_path+'.stdout', job['corsika_stdout_path'])
         sh.copy(corsika_run_path+'.stderr', job['corsika_stderr_path'])
 
-        mct_rc = irfutils.run_acp(
+        mct_rc = irfutils.merlict_plenoscope_propagator(
             corsika_run_path=corsika_run_path,
             output_path=acp_response_path,
             acp_detector_path=job['acp_detector_path'],
