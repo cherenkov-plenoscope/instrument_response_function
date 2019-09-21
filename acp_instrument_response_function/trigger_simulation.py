@@ -202,49 +202,52 @@ def run_job(job):
 
 
 def make_output_directory_and_jobs(
+    output_dir,
     particle_steering_card_path,
     location_steering_card_path,
-    output_path,
-    acp_detector_path,
-    mct_acp_config_path,
-    mct_acp_propagator_path,
+    light_field_geometry_path,
+    merlict_plenoscope_propagator_path,
+    merlict_plenoscope_propagator_config_path,
+    corsika_path,
     trigger_patch_threshold=67,
     trigger_integration_time_in_slices=5
 ):
-    op = output_path
-    imr = 'intermediate_results_of_runs'
+    od = output_dir
+
+    # Make directory tree
+    os.makedirs(od)
+    os.makedirs(join(od, 'input'))
+    os.makedirs(join(od, 'thrown'))
+    os.makedirs(join(od, 'stdout'))
+    os.makedirs(join(od, 'past_trigger'))
 
     # Copy input
-    os.makedirs(op)
-    os.makedirs(join(op, 'input'))
-    os.makedirs(join(op, imr))
-    os.makedirs(join(op, 'stdout'))
-    os.makedirs(join(op, 'past_trigger'))
     sh.copy(
         particle_steering_card_path,
-        join(op, 'input', 'particle_steering_card.json'))
+        join(od, 'input', 'particle_steering_card.json'))
     sh.copy(
         location_steering_card_path,
-        join(op, 'input', 'location_steering_card.json'))
+        join(od, 'input', 'location_steering_card.json'))
     sh.copy(
-        mct_acp_config_path,
-        join(op, 'input', 'mct_acp_config.json'))
-    mct_acp_config_path = join(op, 'input', 'mct_acp_config.json')
+        merlict_plenoscope_propagator_config_path,
+        join(od, 'input', 'merlict_plenoscope_propagator_config.json'))
+    merlict_plenoscope_propagator_config_path = join(
+        od, 'input', 'merlict_plenoscope_propagator_config.json')
     sh.copytree(
-        acp_detector_path,
-        join(op, 'input', 'acp_detector'))
-    acp_detector_path = join(op, 'input', 'acp_detector')
+        light_field_geometry_path,
+        join(od, 'input', 'light_field_geometry'))
+    light_field_geometry_path = join(od, 'input', 'light_field_geometry')
 
     # Read input
     particle_steering_card = irfutils.read_json(
-        join(op, 'input', 'particle_steering_card.json'))
+        join(od, 'input', 'particle_steering_card.json'))
     location_steering_card = irfutils.read_json(
-        join(op, 'input', 'location_steering_card.json'))
-    acp_geometry = irfutils.read_acp_design_geometry(
+        join(od, 'input', 'location_steering_card.json'))
+    plenoscope_geometry = irfutils.read_acp_design_geometry(
         join(
-            op,
+            od,
             'input',
-            'acp_detector',
+            'light_field_geometry',
             'input',
             'scenery',
             'scenery.json'))
