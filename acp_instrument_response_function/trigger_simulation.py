@@ -115,11 +115,17 @@ def __summarize_response(
             trigger_responses[o]['object_distance'])
         truth["trigger_{:d}_respnse".format(o)] = int(
             trigger_responses[o]['patch_threshold'])
-
     return truth
 
 
-def evaluate_trigger_and_export_response(
+def __particle_id_run_id_event_id(event_summary):
+    out = {}
+    for k in ["true_particle_id", "run_id", "event_id"]:
+        out[k] = event_summary[k]
+    return out
+
+
+def __evaluate_trigger_and_export_response(
     run_config,
     merlict_run_path,
     trigger_treshold=67,
@@ -131,6 +137,9 @@ def evaluate_trigger_and_export_response(
     trigger_preparation = pl.trigger.prepare_refocus_sum_trigger(
         light_field_geometry=run.light_field_geometry,
         object_distances=object_distances)
+
+    thrown = []
+    triggered = []
 
     for event in run:
         trigger_responses = pl.trigger.apply_refocus_sum_trigger(
@@ -146,10 +155,10 @@ def evaluate_trigger_and_export_response(
             trigger_responses=trigger_responses,
             detector_truth=event.simulation_truth.detector)
 
-        with open(run_config['thrown_path'], 'at') as fout:
-            fout.write(json.dumps(event_summary)+"\n")
+        thrown.append(event_summary)
 
         if event_summary["trigger_response"] >= trigger_treshold:
+            triggered.append(__particle_id_run_id_event_id(event_summary))
             event_filename = '{run_id:06d}{event_id:06d}'.format(
                 run_id=event_summary["run_id"],
                 event_id=event_summary["event_id"])
@@ -159,11 +168,18 @@ def evaluate_trigger_and_export_response(
             sh.copytree(event._path, event_path)
             pl.tools.acp_format.compress_event_in_place(event_path)
 
+    with open(run_config['thrown_path'], 'wt') as fout:
+        for event_summary in thrown:
+            fout.write(json.dumps(event_summary)+"\n")
+
+    with open(run_config['triggered_path'], 'wt') as fout:
+        for event_id in triggered:
+            fout.write(json.dumps(event_id)+"\n")
+
+
 
 def run_corsika_run(run):
     with tempfile.TemporaryDirectory(prefix='plenoscope_irf_') as tmp:
-        # tmp = "/home/sebastian/Desktop/__run{:06d}".format(run["run_id"])
-        # os.makedirs(tmp)
         corsika_card_path = op.join(tmp, 'corsika_card.txt')
         corsika_run_path = op.join(tmp, 'cherenkov_photons.evtio')
         merlict_run_path = op.join(tmp, 'plenoscope_response.acp')
@@ -194,7 +210,7 @@ def run_corsika_run(run):
         sh.copy(merlict_run_path+'.stdout', run['merlict_stdout_path'])
         sh.copy(merlict_run_path+'.stderr', run['merlict_stderr_path'])
 
-        evaluate_trigger_and_export_response(
+        __evaluate_trigger_and_export_response(
             run_config=run,
             merlict_run_path=merlict_run_path)
 
@@ -241,12 +257,15 @@ def make_output_directory_and_jobs(
     trigger_integration_time_in_slices=5
 ):
     od = output_dir
+    thrown_dir = op.join(od, '__thrown')
+    triggered_dir = op.join(od, '__triggered')
 
     # Make directory tree
     #--------------------
     os.makedirs(od)
     os.makedirs(op.join(od, 'input'))
-    os.makedirs(op.join(od, 'thrown'))
+    os.makedirs(thrown_dir)
+    os.makedirs(triggered_dir)
     os.makedirs(op.join(od, 'stdout'))
     os.makedirs(op.join(od, 'past_trigger'))
 
@@ -338,8 +357,10 @@ def make_output_directory_and_jobs(
                 energy_bin]
             run['light_field_geometry_path'] = light_field_geometry_path
             run['thrown_path'] = op.join(
-                od,
-                'thrown',
+                thrown_dir,
+                '{:06d}.jsonl'.format(run_id))
+            run['triggered_path'] = op.join(
+                triggered_dir,
                 '{:06d}.jsonl'.format(run_id))
             run['past_trigger_dir'] = op.join(
                 od,
