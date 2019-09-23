@@ -62,7 +62,7 @@ def __write_max_scatter_radius_vs_energy(
 ):
     out = {
         "energy_bin_edges/GeV": energy_bin_edges.tolist(),
-        "core_max_scatter_radius/m": core_max_scatter_radius.tolist(),}
+        "core_max_scatter_radius/m": core_max_scatter_radius.tolist()}
     with open(path, "wt") as fout:
         fout.write(json.dumps(out, indent=4))
 
@@ -113,6 +113,28 @@ def __merlict_plenoscope_propagator(
     return mct_rc
 
 
+"""
+2019-Sep-23 benchmark Intel Core-i7 4700mq, SATA-SSD
+in seconds:
+"""
+__CORSIKA_START_UP_TIME = 7.5
+__CORSIKA_TIME_PER_EVENT_PER_GEV = 0.043
+__MERLICT_START_UP_TIME = 4.
+__MERLICT_TIME_PER_EVENT = 1.6
+__PLENOPY_TRIGGER_START_UP_TIME = 12.
+__PLENOPY_TRIGGER_TIME_PER_EVENT = 1.35
+
+
+def __expected_wall_time(mean_energy, num_events):
+    return (
+        __CORSIKA_START_UP_TIME +
+        num_events*mean_energy*__CORSIKA_TIME_PER_EVENT_PER_GEV +
+        __MERLICT_START_UP_TIME +
+        num_events*__MERLICT_TIME_PER_EVENT +
+        __PLENOPY_TRIGGER_START_UP_TIME +
+        num_events*__PLENOPY_TRIGGER_TIME_PER_EVENT)
+
+
 def __make_jobs_with_balanced_runtime(
     energy_bin_edges=np.geomspace(0.25, 1000, 1001),
     num_events_in_energy_bin=512,
@@ -126,7 +148,7 @@ def __make_jobs_with_balanced_runtime(
     mean_energy_in_energy_bins = energy_bin_edges[1:]
 
     highest_event_enrgy = np.max(mean_energy_in_energy_bins)
-    max_cumsum_energy_in_run = highest_event_enrgy*\
+    max_cumsum_energy_in_run = highest_event_enrgy *\
         max_cumsum_energy_in_run_in_units_of_highest_event_energy
 
     num_events_left_in_energy_bin = num_events_in_energy_bin*np.ones(
@@ -139,7 +161,7 @@ def __make_jobs_with_balanced_runtime(
         while num_events_left_in_energy_bin[energy_bin] > 0:
             run_id += 1
             num_events_in_run = int(
-                max_cumsum_energy_in_run//
+                max_cumsum_energy_in_run //
                 mean_energy_in_energy_bins[energy_bin])
 
             if num_events_in_run > max_num_events_in_run:
@@ -150,8 +172,18 @@ def __make_jobs_with_balanced_runtime(
             run["mean_energy"] = mean_energy_in_energy_bins[energy_bin]
             run["num_events"] = num_events_in_run
             run["cumsum_energy"] = run["num_events"]*run["mean_energy"]
+            run["expected_wall_time"] = __expected_wall_time(
+                num_events=run["num_events"],
+                mean_energy=run["mean_energy"])
             num_events_left_in_energy_bin[energy_bin] -= num_events_in_run
             runs.append(run)
+
+    typical_event_energy_in_run = np.median(energy_bin_edges)
+    typical_expected_wall_time_of_run = __expected_wall_time(
+                num_events=max_num_events_in_run,
+                mean_energy=typical_event_energy_in_run)
+    max_wall_time_in_job = 10*typical_expected_wall_time_of_run
+
     jobs = []
     job_id = 0
     run_id = 0
@@ -159,15 +191,15 @@ def __make_jobs_with_balanced_runtime(
         job_id += 1
         job = {}
         job["job_id"] = job_id
-        job["cumsum_energy"] = 0
+        job["expected_wall_time"] = 0
         job["runs"] = []
         while (
             run_id < len(runs) and
-            job["cumsum_energy"] + runs[run_id]["cumsum_energy"] <=
-                max_cumsum_energy_in_run
+            job["expected_wall_time"] + runs[run_id]["expected_wall_time"] <=
+                max_wall_time_in_job
         ):
             job["runs"].append(runs[run_id])
-            job["cumsum_energy"] += runs[run_id]["cumsum_energy"]
+            job["expected_wall_time"] += runs[run_id]["expected_wall_time"]
             run_id += 1
         jobs.append(job)
     return jobs
@@ -207,7 +239,7 @@ def __make_corsika_steering_card_str(run):
             r=1e2*run["instrument_radius"])
     c += 'ATMOSPHERE {:d} T\n'.format(run["atmosphere_id"])
     c += 'CWAVLG 250 700\n'
-    c += 'CSCAT 1 {:3.3e} .0\n'.format(run["core_max_scatter_radius"])
+    c += 'CSCAT 1 {:3.3e} .0\n'.format(1e2*run["core_max_scatter_radius"])
     c += 'CERQEF F T F\n'
     c += 'CERSIZ 1.\n'
     c += 'CERFIL F\n'
@@ -235,7 +267,8 @@ def __summarize_response(
     assert runh[249-1] == 0., (
         "Expected core-y-scatter = 0 for CORSIKA to throw core in a disc.")
 
-    cone_max_scatter_angle = np.deg2rad(run_config["cone_max_scatter_angle_deg"])
+    cone_max_scatter_angle = np.deg2rad(
+        run_config["cone_max_scatter_angle_deg"])
     cone_azimuth = np.deg2rad(run_config["cone_azimuth_deg"])
     cone_zenith = np.deg2rad(run_config["cone_zenith_deg"])
 
@@ -253,7 +286,7 @@ def __summarize_response(
         "true_particle_azimuth": float(evth[11-1]),
         "true_particle_zenith": float(evth[12-1]),
 
-        "true_particle_core_x": float(evth[ 99-1]*1e-2),
+        "true_particle_core_x": float(evth[99-1]*1e-2),
         "true_particle_core_y": float(evth[119-1]*1e-2),
 
         "true_particle_first_interaction_z": float(evth[7-1]*1e-2),
@@ -312,10 +345,12 @@ def __evaluate_trigger_and_export_response(
             min_number_neighbors=min_number_neighbors,
             integration_time_in_slices=integration_time_in_slices)
 
+        crunh = event.simulation_truth.event.corsika_run_header.raw
+        cevth = event.simulation_truth.event.corsika_event_header.raw
         event_summary = __summarize_response(
             run_config=run_config,
-            corsika_run_header=event.simulation_truth.event.corsika_run_header.raw,
-            corsika_event_header=event.simulation_truth.event.corsika_event_header.raw,
+            corsika_run_header=crunh,
+            corsika_event_header=cevth,
             trigger_responses=trigger_responses,
             detector_truth=event.simulation_truth.detector)
 
@@ -341,7 +376,6 @@ def __evaluate_trigger_and_export_response(
             fout.write(json.dumps(event_id)+"\n")
 
 
-
 def __run_corsika_run(run):
     with tempfile.TemporaryDirectory(prefix='plenoscope_irf_') as tmp:
         corsika_card_path = op.join(tmp, 'corsika_card.txt')
@@ -360,14 +394,14 @@ def __run_corsika_run(run):
         sh.copy(corsika_run_path+'.stdout', run['corsika_stdout_path'])
         sh.copy(corsika_run_path+'.stderr', run['corsika_stderr_path'])
 
-        mct_rc = irfutils.__merlict_plenoscope_propagator(
+        mct_rc = __merlict_plenoscope_propagator(
             corsika_run_path=corsika_run_path,
             output_path=merlict_run_path,
             light_field_geometry_path=run['light_field_geometry_path'],
-            merlict_plenoscope_propagator_path=\
-                run['merlict_plenoscope_propagator_path'],
-            merlict_plenoscope_propagator_config_path=\
-                run['merlict_plenoscope_propagator_config_path'],
+            merlict_plenoscope_propagator_path=run[
+                'merlict_plenoscope_propagator_path'],
+            merlict_plenoscope_propagator_config_path=run[
+                'merlict_plenoscope_propagator_config_path'],
             random_seed=run['run_id'],
             photon_origins=True)
 
@@ -425,7 +459,7 @@ def make_output_directory_and_jobs(
     triggered_dir = op.join(od, '__triggered')
 
     # Make directory tree
-    #--------------------
+    # -------------------
     os.makedirs(od)
     os.makedirs(op.join(od, 'input'))
     os.makedirs(thrown_dir)
@@ -434,7 +468,7 @@ def make_output_directory_and_jobs(
     os.makedirs(op.join(od, 'past_trigger'))
 
     # Copy input
-    #-----------
+    # ----------
     sh.copy(
         particle_config_path,
         op.join(od, 'input', 'particle_config.json'))
@@ -452,13 +486,16 @@ def make_output_directory_and_jobs(
     light_field_geometry_path = op.join(od, 'input', 'light_field_geometry')
 
     # Read input
-    #-----------
+    # ----------
     particle_config = __read_json(
         op.join(od, 'input', 'particle_config.json'))
     location_config = __read_json(
         op.join(od, 'input', 'location_config.json'))
     plenoscope_geometry = __read_plenoscope_geometry(
-        op.join(od, 'input', 'light_field_geometry',
+        op.join(
+            od,
+            'input',
+            'light_field_geometry',
             'input',
             'scenery',
             'scenery.json'))
@@ -468,19 +505,19 @@ def make_output_directory_and_jobs(
     (
         core_max_scatter_radius,
         energy_bin_edges
-    ) = irfutils.__energy_bins_and_max_scatter_radius(
+    ) = __energy_bins_and_max_scatter_radius(
         energy=particle_config['energy'],
         max_scatter_radius=particle_config['max_scatter_radius'],
         num_energy_bins=num_energy_bins)
 
-    irfutils.__write_max_scatter_radius_vs_energy(
+    __write_max_scatter_radius_vs_energy(
         energy_bin_edges=energy_bin_edges,
         core_max_scatter_radius=core_max_scatter_radius,
         path=os.path.join(od, 'input', 'max_scatter_radius_vs_energy.csv'))
 
     # Make jobs
-    #----------
-    jobs = irfutils.__make_jobs_with_balanced_runtime(
+    # ---------
+    jobs = __make_jobs_with_balanced_runtime(
         energy_bin_edges=energy_bin_edges,
         num_events_in_energy_bin=num_events_in_energy_bin,
         max_num_events_in_run=max_num_events_in_run,
@@ -503,11 +540,11 @@ def make_output_directory_and_jobs(
                 'earth_magnetic_field_x_muT']
             run['earth_magnetic_field_z_muT'] = location_config[
                 'earth_magnetic_field_z_muT']
-            run['atmosphere_id'] = irfutils.__atmosphere_str_to_corsika_id(
+            run['atmosphere_id'] = __atmosphere_str_to_corsika_id(
                 location_config["atmosphere"])
             run['energy_start'] = energy_bin_edges[energy_bin]
             run['energy_stop'] = energy_bin_edges[energy_bin + 1]
-            run['particle_id'] = irfutils.__particle_str_to_corsika_id(
+            run['particle_id'] = __particle_str_to_corsika_id(
                 particle_config['primary_particle'])
             run['cone_azimuth_deg'] = 0.
             run['cone_zenith_deg'] = 0.
