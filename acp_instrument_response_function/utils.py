@@ -52,56 +52,6 @@ def export_max_scatter_radius_vs_energy(
         header='upper bin-edge energy/Gev, max_scatter_radius/m')
 
 
-def make_corsika_steering_card(
-    random_seed,
-    run_number,
-    number_events_in_run,
-    primary_particle,
-    E_start,
-    E_stop,
-    max_zenith_scatter_angle_deg,
-    max_scatter_radius,
-    observation_level_altitude_asl,
-    instrument_radius,
-    atmosphere_model,
-    earth_magnetic_field_x_muT,
-    earth_magnetic_field_z_muT
-):
-    c = OrderedDict()
-    c['RUNNR'] = ['{:d}'.format(run_number)]
-    c['EVTNR'] = ['1']
-    c['NSHOW'] = ['{:d}'.format(number_events_in_run)]
-    c['PRMPAR '] = ['{:d}'.format(primary_particle)]
-    c['ESLOPE'] = ['-1.0']
-    c['ERANGE'] = [
-        '{E_start:3.3e} {E_stop:3.3e}'.format(E_start=E_start, E_stop=E_stop)]
-    c['THETAP'] = ['0. {:3.3e}'.format(max_zenith_scatter_angle_deg)]
-    c['PHIP'] = ['0.  360.']
-    c['SEED'] = [
-        '{:d} 0 0'.format(random_seed + run_number),
-        '{:d} 0 0'.format(random_seed + run_number + 1),
-        '{:d} 0 0'.format(random_seed + run_number + 2),
-        '{:d} 0 0'.format(random_seed + run_number + 3), ]
-    c['OBSLEV'] = ['{:3.3e}'.format(observation_level_altitude_asl*1e2)]
-    c['FIXCHI'] = ['0.']
-    c['MAGNET'] = ['{BX:3.3e} {BZ:3.3e}'.format(
-        BX=earth_magnetic_field_x_muT,
-        BZ=earth_magnetic_field_z_muT)]
-    c['ELMFLG'] = ['T T']
-    c['MAXPRT'] = ['1']
-    c['PAROUT'] = ['F F']
-    c['TELESCOPE'] = ['0. 0. 0. {:3.3e}'.format(instrument_radius*1e2)]
-    c['ATMOSPHERE'] = ['{:d} T'.format(atmosphere_model)]
-    c['CWAVLG'] = ['250 700']
-    c['CSCAT'] = ['1 {:3.3e} 0.0'.format(max_scatter_radius*1e2)]
-    c['CERQEF'] = ['F T F']  # pde, atmo, mirror
-    c['CERSIZ'] = ['1']
-    c['CERFIL'] = ['F']
-    c['TSTART'] = ['T']
-    c['EXIT'] = []
-    return c
-
-
 def read_acp_design_geometry(scenery_path):
     children = read_json(scenery_path)['children']
     for child in children:
