@@ -12,7 +12,7 @@ scenery_path = pkg_resources.resource_filename(
 
 
 def test_parse_scenery():
-    s = irf.trigger_simulation.__read_plenoscope_geometry(scenery_path)
+    s = irf.__read_plenoscope_geometry(scenery_path)
     assert s["expected_imaging_system_focal_length"] == 106.5
     assert s["expected_imaging_system_aperture_radius"] == 35.5
     assert s["max_FoV_diameter_deg"] == 6.5

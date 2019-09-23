@@ -3,7 +3,7 @@ import numpy as np
 
 
 def test_balanced_jobs():
-    jobs = irf.utils.make_jobs_with_balanced_runtime(
+    jobs = irf.__make_jobs_with_balanced_runtime(
         energy_bin_edges=np.geomspace(0.25, 1000, 1001),
         num_events_in_energy_bin=512,
         max_num_events_in_run=128,
