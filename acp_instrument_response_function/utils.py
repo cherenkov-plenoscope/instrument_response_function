@@ -5,28 +5,6 @@ import os
 import subprocess
 
 
-def primary_particle_to_corsika(particle):
-    if particle == 'gamma':
-        return 1
-    elif particle == 'electron':
-        return 3
-    elif particle == 'proton':
-        return 14
-    raise ValueError(
-        "The primary_particle '{:s}' is not supported".format(particle))
-
-
-def atmosphere_model_to_corsika(model):
-    if model == "chile-paranal-eso":
-        return 26
-    elif model == 'canaries-lapalma-winter':
-        return 8
-    elif model == 'namibia-gamsberg':
-        return 10
-    raise ValueError(
-        "The atmosphere_model '{:s}' is not supported".format(model))
-
-
 def read_json(path):
     with open(path, 'rt') as fin:
         return json.loads(fin.read())
@@ -50,17 +28,6 @@ def export_max_scatter_radius_vs_energy(
         np.c_[energy_bin_edges[1:], max_scatter_radius_in_energy_bin],
         delimiter=', ',
         header='upper bin-edge energy/Gev, max_scatter_radius/m')
-
-
-def read_acp_design_geometry(scenery_path):
-    children = read_json(scenery_path)['children']
-    for child in children:
-        if child["type"] == "Frame" and child["name"] == "Portal":
-            protal = child.copy()
-    for child in protal['children']:
-        if child["type"] == "LightFieldSensor":
-            light_field_sensor = child.copy()
-    return light_field_sensor
 
 
 def energy_bins_and_max_scatter_radius(

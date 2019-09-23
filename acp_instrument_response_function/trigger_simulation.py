@@ -6,7 +6,171 @@ import shutil as sh
 import tempfile
 import corsika_wrapper as cw
 import plenopy as pl
-from . import utils as irfutils
+import subprocess
+
+
+def __read_json(path):
+    with open(path, 'rt') as fin:
+        return json.loads(fin.read())
+
+
+def __particle_str_to_corsika_id(particle_str):
+    if particle_str == 'gamma':
+        return 1
+    elif particle_str == 'electron':
+        return 3
+    elif particle_str == 'proton':
+        return 14
+    raise ValueError(
+        "The primary_particle '{:s}' is not supported".format(particle_str))
+
+
+def __atmosphere_str_to_corsika_id(atmosphere_str):
+    if atmosphere_str == "chile-paranal-eso":
+        return 26
+    elif atmosphere_str == 'canaries-lapalma-winter':
+        return 8
+    elif atmosphere_str == 'namibia-gamsberg':
+        return 10
+    raise ValueError(
+        "The atmosphere_model '{:s}' is not supported".format(atmosphere_str))
+
+
+def __read_plenoscope_geometry(scenery_path):
+    children = __read_json(scenery_path)['children']
+    for child in children:
+        if child["type"] == "Frame" and child["name"] == "Portal":
+            protal = child.copy()
+    for child in protal['children']:
+        if child["type"] == "LightFieldSensor":
+            light_field_sensor = child.copy()
+    return light_field_sensor
+
+
+def __interpolate_with_power10(x, xp, fp):
+    w = np.interp(
+        x=np.log10(x),
+        xp=np.log10(xp),
+        fp=np.log10(fp))
+    return 10**w
+
+
+def __write_max_scatter_radius_vs_energy(
+    energy_bin_edges,
+    core_max_scatter_radius,
+    path
+):
+    out = {
+        "energy_bin_edges/GeV": energy_bin_edges.tolist(),
+        "core_max_scatter_radius/m": core_max_scatter_radius.tolist(),}
+    with open(path, "wt") as fout:
+        fout.write(json.dumps(out, indent=4))
+
+
+def __energy_bins_and_max_scatter_radius(
+    energy,
+    max_scatter_radius,
+    num_energy_bins,
+):
+    assert (energy == np.sort(energy)).all(), (
+        "Expected the energies to be sorted")
+    energy_bin_edges = np.logspace(
+        np.log10(np.min(energy)),
+        np.log10(np.max(energy)),
+        num_energy_bins + 1)
+    max_scatter_radius_in_bin = __interpolate_with_power10(
+        x=energy_bin_edges[1:],
+        xp=energy,
+        fp=max_scatter_radius)
+    return max_scatter_radius_in_bin, energy_bin_edges
+
+
+def __merlict_plenoscope_propagator(
+    corsika_run_path,
+    output_path,
+    light_field_geometry_path,
+    merlict_plenoscope_propagator_path,
+    merlict_plenoscope_propagator_config_path,
+    random_seed,
+    photon_origins=True
+):
+    """
+    Calls the merlict Cherenkov-plenoscope propagation
+    and saves the stdout and stderr
+    """
+    op = output_path
+    with open(op+'.stdout', 'w') as out, open(op+'.stderr', 'w') as err:
+        call = [
+            merlict_plenoscope_propagator_path,
+            '-l', light_field_geometry_path,
+            '-c', merlict_plenoscope_propagator_config_path,
+            '-i', corsika_run_path,
+            '-o', output_path,
+            '-r', '{:d}'.format(random_seed)]
+        if photon_origins:
+            call.append('--all_truth')
+        mct_rc = subprocess.call(call, stdout=out, stderr=err)
+    return mct_rc
+
+
+def make_jobs_with_balanced_runtime(
+    energy_bin_edges=np.geomspace(0.25, 1000, 1001),
+    num_events_in_energy_bin=512,
+    max_num_events_in_run=128,
+    max_cumsum_energy_in_run_in_units_of_highest_event_energy=10,
+):
+    """
+    Make a list of jobs with similar work-load, based on the particle's energy.
+    """
+    num_energy_bins = energy_bin_edges.shape[0] - 1
+    mean_energy_in_energy_bins = energy_bin_edges[1:]
+
+    highest_event_enrgy = np.max(mean_energy_in_energy_bins)
+    max_cumsum_energy_in_run = highest_event_enrgy*\
+        max_cumsum_energy_in_run_in_units_of_highest_event_energy
+
+    num_events_left_in_energy_bin = num_events_in_energy_bin*np.ones(
+        num_energy_bins,
+        dtype=np.int)
+
+    runs = []
+    run_id = 0
+    for energy_bin in range(num_energy_bins):
+        while num_events_left_in_energy_bin[energy_bin] > 0:
+            run_id += 1
+            num_events_in_run = int(
+                max_cumsum_energy_in_run//
+                mean_energy_in_energy_bins[energy_bin])
+
+            if num_events_in_run > max_num_events_in_run:
+                num_events_in_run = max_num_events_in_run
+            run = {}
+            run["run_id"] = run_id
+            run["energy_bin"] = energy_bin
+            run["mean_energy"] = mean_energy_in_energy_bins[energy_bin]
+            run["num_events"] = num_events_in_run
+            run["cumsum_energy"] = run["num_events"]*run["mean_energy"]
+            num_events_left_in_energy_bin[energy_bin] -= num_events_in_run
+            runs.append(run)
+    jobs = []
+    job_id = 0
+    run_id = 0
+    while run_id < len(runs):
+        job_id += 1
+        job = {}
+        job["job_id"] = job_id
+        job["cumsum_energy"] = 0
+        job["runs"] = []
+        while (
+            run_id < len(runs) and
+            job["cumsum_energy"] + runs[run_id]["cumsum_energy"] <=
+                max_cumsum_energy_in_run
+        ):
+            job["runs"].append(runs[run_id])
+            job["cumsum_energy"] += runs[run_id]["cumsum_energy"]
+            run_id += 1
+        jobs.append(job)
+    return jobs
 
 
 def __make_corsika_steering_card_str(run):
@@ -178,7 +342,7 @@ def __evaluate_trigger_and_export_response(
 
 
 
-def run_corsika_run(run):
+def __run_corsika_run(run):
     with tempfile.TemporaryDirectory(prefix='plenoscope_irf_') as tmp:
         corsika_card_path = op.join(tmp, 'corsika_card.txt')
         corsika_run_path = op.join(tmp, 'cherenkov_photons.evtio')
@@ -196,7 +360,7 @@ def run_corsika_run(run):
         sh.copy(corsika_run_path+'.stdout', run['corsika_stdout_path'])
         sh.copy(corsika_run_path+'.stderr', run['corsika_stderr_path'])
 
-        mct_rc = irfutils.merlict_plenoscope_propagator(
+        mct_rc = irfutils.__merlict_plenoscope_propagator(
             corsika_run_path=corsika_run_path,
             output_path=merlict_run_path,
             light_field_geometry_path=run['light_field_geometry_path'],
@@ -217,7 +381,7 @@ def run_corsika_run(run):
 
 def run_job(job):
     for run in job["runs"]:
-        run_corsika_run(run=run)
+        __run_corsika_run(run=run)
     return 0
 
 
@@ -289,11 +453,11 @@ def make_output_directory_and_jobs(
 
     # Read input
     #-----------
-    particle_config = irfutils.read_json(
+    particle_config = __read_json(
         op.join(od, 'input', 'particle_config.json'))
-    location_config = irfutils.read_json(
+    location_config = __read_json(
         op.join(od, 'input', 'location_config.json'))
-    plenoscope_geometry = irfutils.read_acp_design_geometry(
+    plenoscope_geometry = __read_plenoscope_geometry(
         op.join(od, 'input', 'light_field_geometry',
             'input',
             'scenery',
@@ -302,17 +466,17 @@ def make_output_directory_and_jobs(
     # Prepare simulation
     # ------------------
     (
-        max_scatter_radius_in_energy_bin,
+        core_max_scatter_radius,
         energy_bin_edges
-    ) = irfutils.energy_bins_and_max_scatter_radius(
+    ) = irfutils.__energy_bins_and_max_scatter_radius(
         energy=particle_config['energy'],
         max_scatter_radius=particle_config['max_scatter_radius'],
         num_energy_bins=num_energy_bins)
 
-    irfutils.export_max_scatter_radius_vs_energy(
+    irfutils.__write_max_scatter_radius_vs_energy(
         energy_bin_edges=energy_bin_edges,
-        max_scatter_radius_in_energy_bin=max_scatter_radius_in_energy_bin,
-        directory=op.join(od, 'input'))
+        core_max_scatter_radius=core_max_scatter_radius,
+        path=os.path.join(od, 'input', 'max_scatter_radius_vs_energy.csv'))
 
     # Make jobs
     #----------
@@ -339,11 +503,11 @@ def make_output_directory_and_jobs(
                 'earth_magnetic_field_x_muT']
             run['earth_magnetic_field_z_muT'] = location_config[
                 'earth_magnetic_field_z_muT']
-            run['atmosphere_id'] = irfutils.atmosphere_model_to_corsika(
+            run['atmosphere_id'] = irfutils.__atmosphere_str_to_corsika_id(
                 location_config["atmosphere"])
             run['energy_start'] = energy_bin_edges[energy_bin]
             run['energy_stop'] = energy_bin_edges[energy_bin + 1]
-            run['particle_id'] = irfutils.primary_particle_to_corsika(
+            run['particle_id'] = irfutils.__particle_str_to_corsika_id(
                 particle_config['primary_particle'])
             run['cone_azimuth_deg'] = 0.
             run['cone_zenith_deg'] = 0.
@@ -353,8 +517,8 @@ def make_output_directory_and_jobs(
             run['instrument_y'] = 0.
             run['instrument_radius'] = plenoscope_geometry[
                     'expected_imaging_system_aperture_radius']*1.1
-            run['core_max_scatter_radius'] = max_scatter_radius_in_energy_bin[
-                energy_bin]
+            run['core_max_scatter_radius'] = \
+                core_max_scatter_radius[energy_bin]
             run['light_field_geometry_path'] = light_field_geometry_path
             run['thrown_path'] = op.join(
                 thrown_dir,
