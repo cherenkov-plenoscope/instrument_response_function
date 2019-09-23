@@ -7,6 +7,7 @@ import tempfile
 import corsika_wrapper as cw
 import plenopy as pl
 import subprocess
+import glob
 
 
 def __read_json(path):
@@ -592,3 +593,11 @@ def make_output_directory_and_jobs(
                 trigger_integration_time_in_slices
             jobs[j]["runs"][r] = run
     return jobs
+
+
+def concatenate_files(wildcard_path, out_path):
+    in_paths = glob.glob(wildcard_path)
+    with open(out_path, "wt") as fout:
+        for in_path in in_paths:
+            with open(in_path, "rt") as fin:
+                fout.write(fin.read())
