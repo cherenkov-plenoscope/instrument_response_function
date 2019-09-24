@@ -136,76 +136,6 @@ def __expected_wall_time(mean_energy, num_events):
         num_events*__PLENOPY_TRIGGER_TIME_PER_EVENT)
 
 
-def __make_jobs_with_balanced_runtime(
-    energy_bin_edges=np.geomspace(0.25, 1000, 1001),
-    num_events_in_energy_bin=512,
-    max_num_events_in_run=128,
-    max_cumsum_energy_in_run_in_units_of_highest_event_energy=10,
-):
-    """
-    Make a list of jobs with similar work-load, based on the particle's energy.
-    """
-    num_energy_bins = energy_bin_edges.shape[0] - 1
-    mean_energy_in_energy_bins = energy_bin_edges[1:]
-
-    highest_event_enrgy = np.max(mean_energy_in_energy_bins)
-    max_cumsum_energy_in_run = highest_event_enrgy *\
-        max_cumsum_energy_in_run_in_units_of_highest_event_energy
-
-    num_events_left_in_energy_bin = num_events_in_energy_bin*np.ones(
-        num_energy_bins,
-        dtype=np.int)
-
-    runs = []
-    run_id = 0
-    for energy_bin in range(num_energy_bins):
-        while num_events_left_in_energy_bin[energy_bin] > 0:
-            run_id += 1
-            num_events_in_run = int(
-                max_cumsum_energy_in_run //
-                mean_energy_in_energy_bins[energy_bin])
-
-            if num_events_in_run > max_num_events_in_run:
-                num_events_in_run = max_num_events_in_run
-            run = {}
-            run["run_id"] = run_id
-            run["energy_bin"] = energy_bin
-            run["mean_energy"] = mean_energy_in_energy_bins[energy_bin]
-            run["num_events"] = num_events_in_run
-            run["cumsum_energy"] = run["num_events"]*run["mean_energy"]
-            run["expected_wall_time"] = __expected_wall_time(
-                num_events=run["num_events"],
-                mean_energy=run["mean_energy"])
-            num_events_left_in_energy_bin[energy_bin] -= num_events_in_run
-            runs.append(run)
-
-    typical_event_energy_in_run = np.median(energy_bin_edges)
-    typical_expected_wall_time_of_run = __expected_wall_time(
-                num_events=max_num_events_in_run,
-                mean_energy=typical_event_energy_in_run)
-    max_wall_time_in_job = 10*typical_expected_wall_time_of_run
-
-    jobs = []
-    job_id = 0
-    run_id = 0
-    while run_id < len(runs):
-        job_id += 1
-        job = {}
-        job["job_id"] = job_id
-        job["expected_wall_time"] = 0
-        job["runs"] = []
-        while (
-            run_id < len(runs) and
-            job["expected_wall_time"] + runs[run_id]["expected_wall_time"] <=
-                max_wall_time_in_job
-        ):
-            job["runs"].append(runs[run_id])
-            job["expected_wall_time"] += runs[run_id]["expected_wall_time"]
-            run_id += 1
-        jobs.append(job)
-    return jobs
-
-
 def __make_corsika_steering_card_str(run):
     c = ''
     c += 'RUNNR {:d}\n'.format(run["run_id"])
@@ -345,6 +275,8 @@ def __evaluate_trigger_and_export_response(
             trigger_preparation=trigger_preparation,
             min_number_neighbors=min_number_neighbors,
             integration_time_in_slices=integration_time_in_slices)
+        with open(op.join(event._path, "refocus_sum_trigger.json"), "wt") as fout:
+           fout.write(json.dumps(trigger_responses, indent=4))
 
         crunh = event.simulation_truth.event.corsika_run_header.raw
         cevth = event.simulation_truth.event.corsika_event_header.raw
@@ -377,7 +309,8 @@ def __evaluate_trigger_and_export_response(
             fout.write(json.dumps(event_id)+"\n")
 
 
-def __run_corsika_run(run):
+def run_job(job):
+    run = job
     with tempfile.TemporaryDirectory(prefix='plenoscope_irf_') as tmp:
         corsika_card_path = op.join(tmp, 'corsika_card.txt')
         corsika_run_path = op.join(tmp, 'cherenkov_photons.evtio')
@@ -412,11 +345,6 @@ def __run_corsika_run(run):
         __evaluate_trigger_and_export_response(
             run_config=run,
             merlict_run_path=merlict_run_path)
-
-
-def run_job(job):
-    for run in job["runs"]:
-        __run_corsika_run(run=run)
     return 0
 
 
@@ -424,7 +352,6 @@ def make_output_directory_and_jobs(
     output_dir="__example_irf",
     num_energy_bins=31,
     num_events_in_energy_bin=50,
-    max_num_events_in_run=10,
     particle_config_path=op.join(
         "resources",
         "acp",
@@ -518,23 +445,18 @@ def make_output_directory_and_jobs(
 
     # Make jobs
     # ---------
-    jobs = __make_jobs_with_balanced_runtime(
-        energy_bin_edges=energy_bin_edges,
-        num_events_in_energy_bin=num_events_in_energy_bin,
-        max_num_events_in_run=max_num_events_in_run,
-        max_cumsum_energy_in_run_in_units_of_highest_event_energy=10)
-
-    for j in range(len(jobs)):
-        for r in range(len(jobs[j]["runs"])):
+    jobs = []
+    for energy_bin in range(num_energy_bins):
             # already set
             # -----------
             # run_id
             # energy_bin
             # num_events
-
-            run = jobs[j]["runs"][r]
-            run_id = run["run_id"]
-            energy_bin = run["energy_bin"]
+            run = {}
+            run_id = energy_bin + 1
+            run["run_id"] = run_id
+            run["energy_bin"] = energy_bin
+            run["num_events"] = num_events_in_energy_bin
             run['observation_level_altitude_asl'] = location_config[
                 'observation_level_altitude_asl']
             run['earth_magnetic_field_x_muT'] = location_config[
@@ -591,8 +513,9 @@ def make_output_directory_and_jobs(
             run['trigger_patch_threshold'] = trigger_patch_threshold
             run['trigger_integration_time_in_slices'] = \
                 trigger_integration_time_in_slices
-            jobs[j]["runs"][r] = run
+            jobs.append(run)
     return jobs
+
 
 
 def concatenate_files(wildcard_path, out_path):
