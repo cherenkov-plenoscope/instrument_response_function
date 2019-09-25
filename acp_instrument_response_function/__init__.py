@@ -179,7 +179,7 @@ def __make_corsika_steering_card_str(run):
     return c
 
 
-def __summarize_response(
+def __summarize_truth_and_trigger_response(
     run_config,
     corsika_run_header,
     corsika_event_header,
@@ -280,7 +280,7 @@ def __evaluate_trigger_and_export_response(
 
         crunh = event.simulation_truth.event.corsika_run_header.raw
         cevth = event.simulation_truth.event.corsika_event_header.raw
-        event_summary = __summarize_response(
+        event_summary = __summarize_truth_and_trigger_response(
             run_config=run_config,
             corsika_run_header=crunh,
             corsika_event_header=cevth,
