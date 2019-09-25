@@ -157,12 +157,17 @@ def __make_corsika_steering_card_str(run):
     return c
 
 
-def __summarize_truth_and_trigger_response(
-    run_config,
+def __particle_id_run_id_event_id(event_summary):
+    out = {}
+    for k in ["true_particle_id", "run_id", "event_id"]:
+        out[k] = event_summary[k]
+    return out
+
+
+def __summarize_particle_truth(
     corsika_run_header,
     corsika_event_header,
-    trigger_responses,
-    detector_truth,
+    run_config,
 ):
     evth = corsika_event_header
     runh = corsika_run_header
@@ -182,9 +187,9 @@ def __summarize_truth_and_trigger_response(
     cone_zenith = np.deg2rad(run_config["cone_zenith_deg"])
 
     truth = {
+        "true_particle_id": int(evth[3-1]),
         "run_id": int(runh[2-1]),
         "event_id": int(evth[2-1]),
-        "true_particle_id": int(evth[3-1]),
 
         "true_particle_energy": float(evth[4-1]),
 
@@ -209,26 +214,25 @@ def __summarize_truth_and_trigger_response(
         "starting_grammage": float(evth[5-1]),
         "mag_north_vs_x": float(evth[93-1]),
         "obs_level_asl": float(evth[48-1]*1e-2),
-
-        "true_pe_cherenkov": int(detector_truth.number_air_shower_pulses()),
     }
-
-    truth["trigger_response"] = int(np.max(
-        [layer['patch_threshold'] for layer in trigger_responses]))
-
-    for o in range(len(trigger_responses)):
-        truth["trigger_{:d}_object_distance".format(o)] = float(
-            trigger_responses[o]['object_distance'])
-        truth["trigger_{:d}_respnse".format(o)] = int(
-            trigger_responses[o]['patch_threshold'])
     return truth
 
 
-def __particle_id_run_id_event_id(event_summary):
-    out = {}
-    for k in ["true_particle_id", "run_id", "event_id"]:
-        out[k] = event_summary[k]
-    return out
+def __summarize_trigger_response(
+    unique_id,
+    trigger_responses,
+    detector_truth,
+):
+    tr = unique_id.copy()
+    tr["true_pe_cherenkov"] = int(detector_truth.number_air_shower_pulses())
+    tr["trigger_response"] = int(np.max(
+        [layer['patch_threshold'] for layer in trigger_responses]))
+    for o in range(len(trigger_responses)):
+        tr["trigger_{:d}_object_distance".format(o)] = float(
+            trigger_responses[o]['object_distance'])
+        tr["trigger_{:d}_respnse".format(o)] = int(
+            trigger_responses[o]['patch_threshold'])
+    return tr
 
 
 def __evaluate_trigger_and_export_response(
@@ -244,8 +248,9 @@ def __evaluate_trigger_and_export_response(
         light_field_geometry=run.light_field_geometry,
         object_distances=object_distances)
 
-    thrown = []
-    triggered = []
+    particle_truth_table = []
+    trigger_truth_table = []
+    past_trigger_table = []
 
     for event in run:
         trigger_responses = pl.trigger.apply_refocus_sum_trigger(
@@ -258,33 +263,42 @@ def __evaluate_trigger_and_export_response(
 
         crunh = event.simulation_truth.event.corsika_run_header.raw
         cevth = event.simulation_truth.event.corsika_event_header.raw
-        event_summary = __summarize_truth_and_trigger_response(
-            run_config=run_config,
+
+        particle_truth = __summarize_particle_truth(
             corsika_run_header=crunh,
             corsika_event_header=cevth,
+            run_config=run_config)
+        particle_truth_table.append(particle_truth)
+
+        trigger_truth = __summarize_trigger_response(
+            unique_id=__particle_id_run_id_event_id(particle_truth),
             trigger_responses=trigger_responses,
             detector_truth=event.simulation_truth.detector)
+        trigger_truth_table.append(trigger_truth)
 
-        thrown.append(event_summary)
-
-        if event_summary["trigger_response"] >= trigger_treshold:
-            triggered.append(__particle_id_run_id_event_id(event_summary))
+        if trigger_truth["trigger_response"] >= trigger_treshold:
+            past_trigger_table.append(
+                __particle_id_run_id_event_id(particle_truth))
             event_filename = '{run_id:06d}{event_id:06d}'.format(
-                run_id=event_summary["run_id"],
-                event_id=event_summary["event_id"])
+                run_id=particle_truth["run_id"],
+                event_id=particle_truth["event_id"])
             event_path = op.join(
                 run_config["past_trigger_dir"],
                 event_filename)
             sh.copytree(event._path, event_path)
             pl.tools.acp_format.compress_event_in_place(event_path)
 
-    with open(run_config['thrown_path'], 'wt') as fout:
-        for event_summary in thrown:
-            fout.write(json.dumps(event_summary)+"\n")
+    with open(run_config['particle_truth_table_path'], 'wt') as f:
+        for e in particle_truth_table:
+            f.write(json.dumps(e)+"\n")
 
-    with open(run_config['triggered_path'], 'wt') as fout:
-        for event_id in triggered:
-            fout.write(json.dumps(event_id)+"\n")
+    with open(run_config['trigger_truth_table_path'], 'wt') as f:
+        for e in trigger_truth_table:
+            f.write(json.dumps(e)+"\n")
+
+    with open(run_config['past_trigger_table_path'], 'wt') as f:
+        for e in past_trigger_table:
+            f.write(json.dumps(e)+"\n")
 
 
 def run_job(job):
@@ -328,8 +342,8 @@ def run_job(job):
 
 def make_output_directory_and_jobs(
     output_dir="__example_irf",
-    num_energy_bins=31,
-    num_events_in_energy_bin=50,
+    num_energy_bins=3,
+    num_events_in_energy_bin=10,
     particle_config_path=op.join(
         "resources",
         "acp",
@@ -358,18 +372,23 @@ def make_output_directory_and_jobs(
         "run",
         "corsika75600Linux_QGSII_urqmd"),
     trigger_patch_threshold=67,
-    trigger_integration_time_in_slices=5
+    trigger_integration_time_in_slices=5,
+    particle_truth_table_dirname='__particle_truth_table',
+    trigger_truth_table_dirname='__trigger_truth_table',
+    past_trigger_table_dirname='__past_trigger_table'
 ):
     od = output_dir
-    thrown_dir = op.join(od, '__thrown')
-    triggered_dir = op.join(od, '__triggered')
+    particle_truth_table_dir = op.join(od, particle_truth_table_dirname)
+    trigger_truth_table_dir = op.join(od, trigger_truth_table_dirname)
+    past_trigger_table_dir = op.join(od, past_trigger_table_dirname)
 
     # Make directory tree
     # -------------------
     os.makedirs(od)
     os.makedirs(op.join(od, 'input'))
-    os.makedirs(thrown_dir)
-    os.makedirs(triggered_dir)
+    os.makedirs(particle_truth_table_dir)
+    os.makedirs(trigger_truth_table_dir)
+    os.makedirs(past_trigger_table_dir)
     os.makedirs(op.join(od, 'stdout'))
     os.makedirs(op.join(od, 'past_trigger'))
 
@@ -432,6 +451,7 @@ def make_output_directory_and_jobs(
             # num_events
             run = {}
             run_id = energy_bin + 1
+            run_id_str = '{:06d}'.format(run_id)
             run["run_id"] = run_id
             run["energy_bin"] = energy_bin
             run["num_events"] = num_events_in_energy_bin
@@ -458,12 +478,12 @@ def make_output_directory_and_jobs(
             run['core_max_scatter_radius'] = \
                 core_max_scatter_radius[energy_bin]
             run['light_field_geometry_path'] = light_field_geometry_path
-            run['thrown_path'] = op.join(
-                thrown_dir,
-                '{:06d}.jsonl'.format(run_id))
-            run['triggered_path'] = op.join(
-                triggered_dir,
-                '{:06d}.jsonl'.format(run_id))
+            run['particle_truth_table_path'] = op.join(
+                particle_truth_table_dir, run_id_str+".jsonl")
+            run['trigger_truth_table_path'] = op.join(
+                trigger_truth_table_dir, run_id_str+".jsonl")
+            run['past_trigger_table_path'] = op.join(
+                past_trigger_table_dir, run_id_str+".jsonl")
             run['past_trigger_dir'] = op.join(
                 od,
                 'past_trigger')
@@ -475,19 +495,19 @@ def make_output_directory_and_jobs(
             run['merlict_stdout_path'] = op.join(
                 od,
                 'stdout',
-                '{:06d}_merlict.stdout'.format(run_id))
+                run_id_str+'_merlict.stdout')
             run['merlict_stderr_path'] = op.join(
                 od,
                 'stdout',
-                '{:06d}_merlict.stderr'.format(run_id))
+                run_id_str+'_merlict.stderr')
             run['corsika_stdout_path'] = op.join(
                 od,
                 'stdout',
-                '{:06d}_corsika.stdout'.format(run_id))
+                run_id_str+'_corsika.stdout')
             run['corsika_stderr_path'] = op.join(
                 od,
                 'stdout',
-                '{:06d}_corsika.stderr'.format(run_id))
+                run_id_str+'_corsika.stderr')
             run['trigger_patch_threshold'] = trigger_patch_threshold
             run['trigger_integration_time_in_slices'] = \
                 trigger_integration_time_in_slices
