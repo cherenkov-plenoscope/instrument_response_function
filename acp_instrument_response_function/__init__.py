@@ -114,28 +114,6 @@ def __merlict_plenoscope_propagator(
     return mct_rc
 
 
-"""
-2019-Sep-23 benchmark Intel Core-i7 4700mq, SATA-SSD
-in seconds:
-"""
-__CORSIKA_START_UP_TIME = 7.5
-__CORSIKA_TIME_PER_EVENT_PER_GEV = 0.043
-__MERLICT_START_UP_TIME = 4.
-__MERLICT_TIME_PER_EVENT = 1.6
-__PLENOPY_TRIGGER_START_UP_TIME = 12.
-__PLENOPY_TRIGGER_TIME_PER_EVENT = 1.35
-
-
-def __expected_wall_time(mean_energy, num_events):
-    return (
-        __CORSIKA_START_UP_TIME +
-        num_events*mean_energy*__CORSIKA_TIME_PER_EVENT_PER_GEV +
-        __MERLICT_START_UP_TIME +
-        num_events*__MERLICT_TIME_PER_EVENT +
-        __PLENOPY_TRIGGER_START_UP_TIME +
-        num_events*__PLENOPY_TRIGGER_TIME_PER_EVENT)
-
-
 def __make_corsika_steering_card_str(run):
     c = ''
     c += 'RUNNR {:d}\n'.format(run["run_id"])
