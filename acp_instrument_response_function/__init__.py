@@ -253,8 +253,8 @@ def __evaluate_trigger_and_export_response(
             trigger_preparation=trigger_preparation,
             min_number_neighbors=min_number_neighbors,
             integration_time_in_slices=integration_time_in_slices)
-        with open(op.join(event._path, "refocus_sum_trigger.json"), "wt") as fout:
-           fout.write(json.dumps(trigger_responses, indent=4))
+        with open(op.join(event._path, "refocus_sum_trigger.json"), "wt") as f:
+            f.write(json.dumps(trigger_responses, indent=4))
 
         crunh = event.simulation_truth.event.corsika_run_header.raw
         cevth = event.simulation_truth.event.corsika_event_header.raw
@@ -493,7 +493,6 @@ def make_output_directory_and_jobs(
                 trigger_integration_time_in_slices
             jobs.append(run)
     return jobs
-
 
 
 def concatenate_files(wildcard_path, out_path):
