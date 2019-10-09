@@ -25,10 +25,4 @@ setuptools.setup(
         'docopt',
         'scoop',
     ],
-    entry_points={'console_scripts': [
-        'acp_instrument_response_function = ' +
-        'acp_instrument_response_function.main:main',
-        'acp_trigger_irf = ' +
-        'acp_instrument_response_function.trigger_main:main',
-    ]},
 )
