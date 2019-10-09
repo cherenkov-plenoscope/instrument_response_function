@@ -7,7 +7,7 @@ setuptools.setup(
     'Atmospheric-Cherenkov-Plenoscope (ACP)',
     url='https://github.com/cherenkov-plenoscope/instrument_response_function.git',
     author='Sebastian Achim Mueller',
-    author_email='sebmuell@phys.ethz.ch',
+    author_email='sebastian-achim.mueller@mpi-hd.mpg.de',
     license='GPL v3',
     packages=[
         'acp_instrument_response_function',
