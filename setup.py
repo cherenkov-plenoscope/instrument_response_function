@@ -1,4 +1,5 @@
 import setuptools
+import os
 
 setuptools.setup(
     name='acp_instrument_response_function',
@@ -13,7 +14,7 @@ setuptools.setup(
         'acp_instrument_response_function',
     ],
     package_data={'acp_instrument_response_function': [
-        'tests/resources/*']},
+        os.path.join('tests', 'resources', '*')]},
     install_requires=[
         'docopt',
         'scoop',
