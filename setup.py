@@ -25,5 +25,4 @@ setuptools.setup(
         'acp_trigger_irf = ' +
         'acp_instrument_response_function.trigger_main:main',
     ]},
-    zip_safe=False,
 )
