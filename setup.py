@@ -1,6 +1,6 @@
-from distutils.core import setup
+import setuptools
 
-setup(
+setuptools.setup(
     name='acp_instrument_response_function',
     version='0.0.3',
     description='Simulates the instrument response of the ' +
