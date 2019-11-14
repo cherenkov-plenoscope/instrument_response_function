@@ -488,69 +488,69 @@ def make_output_directory_and_jobs(
     # ---------
     jobs = []
     for energy_bin in range(num_energy_bins):
-            run = {}
-            run_id = energy_bin + 1
-            run_id_str = '{:06d}'.format(run_id)
-            run["run_id"] = run_id
-            run["energy_bin"] = energy_bin
-            run["num_events"] = num_events_in_energy_bin
-            run['observation_level_altitude_asl'] = location_config[
-                'observation_level_altitude_asl']
-            run['earth_magnetic_field_x_muT'] = location_config[
-                'earth_magnetic_field_x_muT']
-            run['earth_magnetic_field_z_muT'] = location_config[
-                'earth_magnetic_field_z_muT']
-            run['atmosphere_id'] = __atmosphere_str_to_corsika_id(
-                location_config["atmosphere"])
-            run['energy_start'] = energy_bin_edges[energy_bin]
-            run['energy_stop'] = energy_bin_edges[energy_bin + 1]
-            run['particle_id'] = __particle_str_to_corsika_id(
-                particle_config['primary_particle'])
-            run['cone_azimuth_deg'] = 0.
-            run['cone_zenith_deg'] = 0.
-            run['cone_max_scatter_angle_deg'] = particle_config[
-                'max_scatter_angle_deg']
-            run['instrument_x'] = 0.
-            run['instrument_y'] = 0.
-            run['instrument_radius'] = plenoscope_geometry[
-                    'expected_imaging_system_aperture_radius']*1.1
-            run['core_max_scatter_radius'] = \
-                core_max_scatter_radius[energy_bin]
-            run['light_field_geometry_path'] = light_field_geometry_path
-            run['particle_truth_table_path'] = op.join(
-                particle_truth_table_dir, run_id_str+".jsonl")
-            run['trigger_truth_table_path'] = op.join(
-                trigger_truth_table_dir, run_id_str+".jsonl")
-            run['past_trigger_table_path'] = op.join(
-                past_trigger_table_dir, run_id_str+".jsonl")
-            run['past_trigger_dir'] = op.join(
-                od,
-                'past_trigger')
-            run['merlict_plenoscope_propagator_config_path'] = \
-                merlict_plenoscope_propagator_config_path
-            run['merlict_plenoscope_propagator_path'] = \
-                merlict_plenoscope_propagator_path
-            run['corsika_path'] = corsika_path
-            run['merlict_stdout_path'] = op.join(
-                od,
-                'stdout',
-                run_id_str+'_merlict.stdout')
-            run['merlict_stderr_path'] = op.join(
-                od,
-                'stdout',
-                run_id_str+'_merlict.stderr')
-            run['corsika_stdout_path'] = op.join(
-                od,
-                'stdout',
-                run_id_str+'_corsika.stdout')
-            run['corsika_stderr_path'] = op.join(
-                od,
-                'stdout',
-                run_id_str+'_corsika.stderr')
-            run['trigger_patch_threshold'] = trigger_patch_threshold
-            run['trigger_integration_time_in_slices'] = \
-                trigger_integration_time_in_slices
-            jobs.append(run)
+        run = {}
+        run_id = energy_bin + 1
+        run_id_str = '{:06d}'.format(run_id)
+        run["run_id"] = run_id
+        run["energy_bin"] = energy_bin
+        run["num_events"] = num_events_in_energy_bin
+        run['observation_level_altitude_asl'] = location_config[
+            'observation_level_altitude_asl']
+        run['earth_magnetic_field_x_muT'] = location_config[
+            'earth_magnetic_field_x_muT']
+        run['earth_magnetic_field_z_muT'] = location_config[
+            'earth_magnetic_field_z_muT']
+        run['atmosphere_id'] = __atmosphere_str_to_corsika_id(
+            location_config["atmosphere"])
+        run['energy_start'] = energy_bin_edges[energy_bin]
+        run['energy_stop'] = energy_bin_edges[energy_bin + 1]
+        run['particle_id'] = __particle_str_to_corsika_id(
+            particle_config['primary_particle'])
+        run['cone_azimuth_deg'] = 0.
+        run['cone_zenith_deg'] = 0.
+        run['cone_max_scatter_angle_deg'] = particle_config[
+            'max_scatter_angle_deg']
+        run['instrument_x'] = 0.
+        run['instrument_y'] = 0.
+        run['instrument_radius'] = plenoscope_geometry[
+                'expected_imaging_system_aperture_radius']*1.1
+        run['core_max_scatter_radius'] = \
+            core_max_scatter_radius[energy_bin]
+        run['light_field_geometry_path'] = light_field_geometry_path
+        run['particle_truth_table_path'] = op.join(
+            particle_truth_table_dir, run_id_str+".jsonl")
+        run['trigger_truth_table_path'] = op.join(
+            trigger_truth_table_dir, run_id_str+".jsonl")
+        run['past_trigger_table_path'] = op.join(
+            past_trigger_table_dir, run_id_str+".jsonl")
+        run['past_trigger_dir'] = op.join(
+            od,
+            'past_trigger')
+        run['merlict_plenoscope_propagator_config_path'] = \
+            merlict_plenoscope_propagator_config_path
+        run['merlict_plenoscope_propagator_path'] = \
+            merlict_plenoscope_propagator_path
+        run['corsika_path'] = corsika_path
+        run['merlict_stdout_path'] = op.join(
+            od,
+            'stdout',
+            run_id_str+'_merlict.stdout')
+        run['merlict_stderr_path'] = op.join(
+            od,
+            'stdout',
+            run_id_str+'_merlict.stderr')
+        run['corsika_stdout_path'] = op.join(
+            od,
+            'stdout',
+            run_id_str+'_corsika.stdout')
+        run['corsika_stderr_path'] = op.join(
+            od,
+            'stdout',
+            run_id_str+'_corsika.stderr')
+        run['trigger_patch_threshold'] = trigger_patch_threshold
+        run['trigger_integration_time_in_slices'] = \
+            trigger_integration_time_in_slices
+        jobs.append(run)
     return jobs
 
 
