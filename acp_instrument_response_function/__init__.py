@@ -301,6 +301,36 @@ def __evaluate_trigger_and_export_response(
             f.write(json.dumps(e)+"\n")
 
 
+def assert_particle_location_and_deflection_do_match(
+    particle_config,
+    location_config,
+    magnetic_deflection_config
+):
+    pc = particle_config
+    loc = location_config
+    mdc = magnetic_deflection_config
+
+    assert (
+        mdc['input']['corsika_particle_id'] ==
+        __particle_str_to_corsika_id(pc['primary_particle']))
+
+    mdc_loc = mdc['input']['site']
+
+    assert (mdc_loc['corsika_atmosphere_model'] ==
+        __atmosphere_str_to_corsika_id(loc['atmosphere']))
+
+    tol = 0.05
+
+    obs_l = 'observation_level_altitude_asl'
+    assert np.abs(mdc_loc[obs_l] - loc[obs_l]) <= tol*loc[obs_l]
+
+    mag_x = 'earth_magnetic_field_x_muT'
+    assert np.abs(mdc_loc[mag_x] - loc[mag_x]) <= tol*loc[mag_x]
+
+    mag_z = 'earth_magnetic_field_z_muT'
+    assert np.abs(mdc_loc[mag_z] - loc[mag_z]) <= tol*loc[mag_z]
+
+
 def run_job(job):
     run = job
     with tempfile.TemporaryDirectory(prefix='plenoscope_irf_') as tmp:
@@ -348,7 +378,11 @@ def make_output_directory_and_jobs(
         "resources",
         "acp",
         "71m",
-        "gamma_calib.json"),
+        "electron_calib.json"),
+    magnetic_deflection_config_path=op.join(
+        "resources",
+        "acp",
+        "magnetic_deflection_electron_chile_paranal.json"),
     location_config_path=op.join(
         "resources",
         "acp",
@@ -401,6 +435,9 @@ def make_output_directory_and_jobs(
         location_config_path,
         op.join(od, 'input', 'location_config.json'))
     sh.copy(
+        magnetic_deflection_config_path,
+        op.join(od, 'input', 'magnetic_deflection_config.json'))
+    sh.copy(
         merlict_plenoscope_propagator_config_path,
         op.join(od, 'input', 'merlict_plenoscope_propagator_config.json'))
     merlict_plenoscope_propagator_config_path = op.join(
@@ -416,6 +453,8 @@ def make_output_directory_and_jobs(
         op.join(od, 'input', 'particle_config.json'))
     location_config = __read_json(
         op.join(od, 'input', 'location_config.json'))
+    magnetic_deflection_config = __read_json(
+        op.join(od, 'input', 'magnetic_deflection_config.json'))
     plenoscope_geometry = __read_plenoscope_geometry(
         op.join(
             od,
@@ -424,6 +463,11 @@ def make_output_directory_and_jobs(
             'input',
             'scenery',
             'scenery.json'))
+
+    assert_particle_location_and_deflection_do_match(
+        particle_config=particle_config,
+        location_config=location_config,
+        magnetic_deflection_config=magnetic_deflection_config)
 
     # Prepare simulation
     # ------------------
@@ -444,11 +488,6 @@ def make_output_directory_and_jobs(
     # ---------
     jobs = []
     for energy_bin in range(num_energy_bins):
-            # already set
-            # -----------
-            # run_id
-            # energy_bin
-            # num_events
             run = {}
             run_id = energy_bin + 1
             run_id_str = '{:06d}'.format(run_id)
