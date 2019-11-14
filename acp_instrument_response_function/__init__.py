@@ -56,34 +56,91 @@ def __interpolate_with_power10(x, xp, fp):
     return 10**w
 
 
-def __write_max_scatter_radius_vs_energy(
-    energy_bin_edges,
-    core_max_scatter_radius,
-    path
-):
+def _write_energy_dependencies(energy_dependencies, path):
+    edp = energy_dependencies
     out = {
-        "energy_bin_edges/GeV": energy_bin_edges.tolist(),
-        "core_max_scatter_radius/m": core_max_scatter_radius.tolist()}
+        "energy_bin_edges": edp["energy_bin_edges"].tolist(),
+        "max_scatter_radius_in_bin": edp["max_scatter_radius_in_bin"].tolist(),
+        "magnetic_deflection_correction": edp[
+            "magnetic_deflection_correction"].tolist(),
+        "instrument_x": edp["instrument_x"].tolist(),
+        "instrument_y": edp["instrument_y"].tolist(),
+        "azimuth_phi_deg": edp["azimuth_phi_deg"].tolist(),
+        "zenith_theta_deg": edp["zenith_theta_deg"].tolist(),
+    }
     with open(path, "wt") as fout:
         fout.write(json.dumps(out, indent=4))
 
 
-def __energy_bins_and_max_scatter_radius(
-    energy,
-    max_scatter_radius,
-    num_energy_bins,
+def _estimate_energy_dependencies(
+    particle_config,
+    magnetic_deflection_config,
+    num_energy_bins
 ):
-    assert (energy == np.sort(energy)).all(), (
-        "Expected the energies to be sorted")
+    par = particle_config
+    _par_sort = np.argsort(par['energy'])
+    par_energy = np.array(par['energy'])[_par_sort]
+    par_max_scatter_radius = np.array(par['max_scatter_radius'])[_par_sort]
+
+    mdf = magnetic_deflection_config
+    _mdf_sort = np.argsort(mdf['energy'])
+    mdf_energy = np.array(mdf['energy'])[_mdf_sort]
+    mdf_instrument_x = np.array(mdf['instrument_x'])[_mdf_sort]
+    mdf_instrument_y = np.array(mdf['instrument_y'])[_mdf_sort]
+    mdf_azimuth_phi_deg = np.array(mdf['azimuth_phi_deg'])[_mdf_sort]
+    mdf_zenith_theta_deg = np.array(mdf['zenith_theta_deg'])[_mdf_sort]
+
+    _min_energy = np.max([np.min(par_energy), np.min(mdf_energy)])
+
     energy_bin_edges = np.logspace(
-        np.log10(np.min(energy)),
-        np.log10(np.max(energy)),
+        np.log10(_min_energy),
+        np.log10(np.max(par_energy)),
         num_energy_bins + 1)
+    _energy_bin_upper_energy = energy_bin_edges[1:]
+    _energy_bin_lower_energy = energy_bin_edges[0:-1]
+
     max_scatter_radius_in_bin = __interpolate_with_power10(
-        x=energy_bin_edges[1:],
-        xp=energy,
-        fp=max_scatter_radius)
-    return max_scatter_radius_in_bin, energy_bin_edges
+        x=_energy_bin_upper_energy,
+        xp=par_energy,
+        fp=par_max_scatter_radius)
+
+    cor = np.zeros(num_energy_bins, dtype=np.bool)
+    instrument_x = np.zeros(num_energy_bins, dtype=np.float)
+    instrument_y = np.zeros(num_energy_bins, dtype=np.float)
+    azimuth_phi_deg = np.zeros(num_energy_bins, dtype=np.float)
+    zenith_theta_deg = np.zeros(num_energy_bins, dtype=np.float)
+
+    cor[
+        _energy_bin_lower_energy < np.max(mdf_energy)] = True
+
+    instrument_x[cor] = np.interp(
+        x=_energy_bin_lower_energy,
+        xp=mdf_energy,
+        fp=mdf_instrument_x)[cor]
+
+    instrument_y[cor] = np.interp(
+        x=_energy_bin_lower_energy,
+        xp=mdf_energy,
+        fp=mdf_instrument_y)[cor]
+
+    azimuth_phi_deg[cor] = np.interp(
+        x=_energy_bin_lower_energy,
+        xp=mdf_energy,
+        fp=mdf_azimuth_phi_deg)[cor]
+
+    zenith_theta_deg[cor] = np.interp(
+        x=_energy_bin_lower_energy,
+        xp=mdf_energy,
+        fp=mdf_zenith_theta_deg)[cor]
+
+    return {
+        "energy_bin_edges": energy_bin_edges,
+        "max_scatter_radius_in_bin": max_scatter_radius_in_bin,
+        "magnetic_deflection_correction": cor,
+        "instrument_x": instrument_x,
+        "instrument_y": instrument_y,
+        "azimuth_phi_deg": azimuth_phi_deg,
+        "zenith_theta_deg": zenith_theta_deg}
 
 
 def __merlict_plenoscope_propagator(
@@ -320,15 +377,14 @@ def assert_particle_location_and_deflection_do_match(
         __atmosphere_str_to_corsika_id(loc['atmosphere']))
 
     tol = 0.05
-
     obs_l = 'observation_level_altitude_asl'
-    assert np.abs(mdc_loc[obs_l] - loc[obs_l]) <= tol*loc[obs_l]
+    assert np.abs(mdc_loc[obs_l] - loc[obs_l]) <= np.abs(tol*loc[obs_l])
 
     mag_x = 'earth_magnetic_field_x_muT'
-    assert np.abs(mdc_loc[mag_x] - loc[mag_x]) <= tol*loc[mag_x]
+    assert np.abs(mdc_loc[mag_x] - loc[mag_x]) <= np.abs(tol*loc[mag_x])
 
     mag_z = 'earth_magnetic_field_z_muT'
-    assert np.abs(mdc_loc[mag_z] - loc[mag_z]) <= tol*loc[mag_z]
+    assert np.abs(mdc_loc[mag_z] - loc[mag_z]) <= np.abs(tol*loc[mag_z])
 
 
 def run_job(job):
@@ -378,10 +434,11 @@ def make_output_directory_and_jobs(
         "resources",
         "acp",
         "71m",
-        "electron_calib.json"),
+        "electron_calibration.json"),
     magnetic_deflection_config_path=op.join(
         "resources",
         "acp",
+        "71m",
         "magnetic_deflection_electron_chile_paranal.json"),
     location_config_path=op.join(
         "resources",
@@ -471,29 +528,39 @@ def make_output_directory_and_jobs(
 
     # Prepare simulation
     # ------------------
-    (
-        core_max_scatter_radius,
-        energy_bin_edges
-    ) = __energy_bins_and_max_scatter_radius(
-        energy=particle_config['energy'],
-        max_scatter_radius=particle_config['max_scatter_radius'],
+    energy_dependencies = _estimate_energy_dependencies(
+        particle_config=particle_config,
+        magnetic_deflection_config=magnetic_deflection_config,
         num_energy_bins=num_energy_bins)
+    edp = energy_dependencies
 
-    __write_max_scatter_radius_vs_energy(
-        energy_bin_edges=energy_bin_edges,
-        core_max_scatter_radius=core_max_scatter_radius,
-        path=os.path.join(od, 'input', 'max_scatter_radius_vs_energy.csv'))
+    _write_energy_dependencies(
+        energy_dependencies=edp,
+        path=os.path.join(od, 'input', 'energy_dependencies.json'))
 
     # Make jobs
     # ---------
     jobs = []
     for energy_bin in range(num_energy_bins):
+
         run = {}
         run_id = energy_bin + 1
         run_id_str = '{:06d}'.format(run_id)
         run["run_id"] = run_id
         run["energy_bin"] = energy_bin
         run["num_events"] = num_events_in_energy_bin
+        run['energy_start'] = edp["energy_bin_edges"][energy_bin]
+        run['energy_stop'] = edp["energy_bin_edges"][energy_bin + 1]
+
+        run['magnetic_deflection_correction'] = edp[
+            "magnetic_deflection_correction"][energy_bin]
+        run['cone_azimuth_deg'] = edp["azimuth_phi_deg"][energy_bin]
+        run['cone_zenith_deg'] = edp["zenith_theta_deg"][energy_bin]
+        run['instrument_x'] = edp["instrument_x"][energy_bin]
+        run['instrument_y'] = edp["instrument_y"][energy_bin]
+        run['core_max_scatter_radius'] = edp[
+            "max_scatter_radius_in_bin"][energy_bin]
+
         run['observation_level_altitude_asl'] = location_config[
             'observation_level_altitude_asl']
         run['earth_magnetic_field_x_muT'] = location_config[
@@ -502,20 +569,13 @@ def make_output_directory_and_jobs(
             'earth_magnetic_field_z_muT']
         run['atmosphere_id'] = __atmosphere_str_to_corsika_id(
             location_config["atmosphere"])
-        run['energy_start'] = energy_bin_edges[energy_bin]
-        run['energy_stop'] = energy_bin_edges[energy_bin + 1]
+
         run['particle_id'] = __particle_str_to_corsika_id(
             particle_config['primary_particle'])
-        run['cone_azimuth_deg'] = 0.
-        run['cone_zenith_deg'] = 0.
         run['cone_max_scatter_angle_deg'] = particle_config[
             'max_scatter_angle_deg']
-        run['instrument_x'] = 0.
-        run['instrument_y'] = 0.
         run['instrument_radius'] = plenoscope_geometry[
                 'expected_imaging_system_aperture_radius']*1.1
-        run['core_max_scatter_radius'] = \
-            core_max_scatter_radius[energy_bin]
         run['light_field_geometry_path'] = light_field_geometry_path
         run['particle_truth_table_path'] = op.join(
             particle_truth_table_dir, run_id_str+".jsonl")
