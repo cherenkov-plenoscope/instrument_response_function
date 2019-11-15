@@ -14,28 +14,21 @@ def __read_json(path):
     with open(path, 'rt') as fin:
         return json.loads(fin.read())
 
+PARTICLE_STR_TO_CORSIKA_ID = {
+    'gamma': 1,
+    'electron': 3,
+    'proton': 14}
 
-def __particle_str_to_corsika_id(particle_str):
-    if particle_str == 'gamma':
-        return 1
-    elif particle_str == 'electron':
-        return 3
-    elif particle_str == 'proton':
-        return 14
-    raise ValueError(
-        "The primary_particle '{:s}' is not supported".format(particle_str))
+CORSIKA_ID_TO_PARTICLE_STR = {
+    v: k for k, v in PARTICLE_STR_TO_CORSIKA_ID.items()}
 
+ATMOSPHERE_STR_TO_CORSIKA_ID = {
+    "chile-paranal-eso": 26,
+    'canaries-lapalma-winter': 8,
+    'namibia-gamsberg': 10}
 
-def __atmosphere_str_to_corsika_id(atmosphere_str):
-    if atmosphere_str == "chile-paranal-eso":
-        return 26
-    elif atmosphere_str == 'canaries-lapalma-winter':
-        return 8
-    elif atmosphere_str == 'namibia-gamsberg':
-        return 10
-    raise ValueError(
-        "The atmosphere_model '{:s}' is not supported".format(atmosphere_str))
-
+CORSIKA_ID_TO_ATMOSPHERE_STR = {
+    v: k for k, v in ATMOSPHERE_STR_TO_CORSIKA_ID.items()}
 
 def __read_plenoscope_geometry(scenery_path):
     children = __read_json(scenery_path)['children']
@@ -369,12 +362,12 @@ def assert_particle_location_and_deflection_do_match(
 
     assert (
         mdc['input']['corsika_particle_id'] ==
-        __particle_str_to_corsika_id(pc['primary_particle']))
+        PARTICLE_STR_TO_CORSIKA_ID[pc['primary_particle']])
 
     mdc_loc = mdc['input']['site']
 
     assert (mdc_loc['corsika_atmosphere_model'] ==
-        __atmosphere_str_to_corsika_id(loc['atmosphere']))
+        ATMOSPHERE_STR_TO_CORSIKA_ID[loc['atmosphere']])
 
     tol = 0.05
     obs_l = 'observation_level_altitude_asl'
@@ -568,11 +561,11 @@ def make_output_directory_and_jobs(
             'earth_magnetic_field_x_muT']
         run['earth_magnetic_field_z_muT'] = location_config[
             'earth_magnetic_field_z_muT']
-        run['atmosphere_id'] = __atmosphere_str_to_corsika_id(
-            location_config["atmosphere"])
+        run['atmosphere_id'] = ATMOSPHERE_STR_TO_CORSIKA_ID[
+            location_config["atmosphere"]]
 
-        run['particle_id'] = __particle_str_to_corsika_id(
-            particle_config['primary_particle'])
+        run['particle_id'] = PARTICLE_STR_TO_CORSIKA_ID[
+            particle_config['primary_particle']]
         run['cone_max_scatter_angle_deg'] = particle_config[
             'max_scatter_angle_deg']
         run['instrument_radius'] = plenoscope_geometry[
