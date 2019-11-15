@@ -401,7 +401,8 @@ def run_job(job):
         cor_rc = cw.corsika(
             steering_card=cw.read_steering_card(corsika_card_path),
             output_path=corsika_run_path,
-            save_stdout=True)
+            save_stdout=True,
+            corsika_path=run['corsika_path'])
 
         sh.copy(corsika_run_path+'.stdout', run['corsika_stdout_path'])
         sh.copy(corsika_run_path+'.stderr', run['corsika_stderr_path'])
