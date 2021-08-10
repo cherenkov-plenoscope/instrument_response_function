@@ -1,3 +1,10 @@
+ARCHIVED
+========
+This repository is out of service.
+This estimate of the instrument-response-function was not able to simulate air-showers with particle-energies below the geomagnetic-cutoff. The whole population-algorithm of the instrument-response was changed to account for this and lifes on in ```starter_kit/plenoirf```.
+
+Thanks to Dominik Neise and Max L. Ahnen for their contribution in the early days of the cherenkov-plenoscope.
+
 Instrument Response Function (IRF)
 ----------------------------------
 
